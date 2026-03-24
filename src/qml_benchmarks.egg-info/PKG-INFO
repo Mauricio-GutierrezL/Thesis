@@ -1,0 +1,23 @@
+Metadata-Version: 2.4
+Name: qml_benchmarks
+Version: 0.1
+Summary: A package to benchmark quantum machine learning models
+Author: QML Team XanaduAI
+Classifier: Development Status :: 1 - Planning
+Classifier: Programming Language :: Python :: 3
+Classifier: Operating System :: OS Independent
+License-File: LICENSE
+Requires-Dist: numpy
+Requires-Dist: pennylane
+Requires-Dist: scikit_learn
+Requires-Dist: matplotlib
+Requires-Dist: jax
+Requires-Dist: jaxlib
+Requires-Dist: flax
+Requires-Dist: optax
+Requires-Dist: typing-extensions
+Requires-Dist: pyyaml
+Requires-Dist: pandas
+Requires-Dist: seaborn
+Requires-Dist: scipy
+Dynamic: license-file

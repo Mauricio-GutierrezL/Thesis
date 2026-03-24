@@ -1,0 +1,13 @@
+numpy
+pennylane
+scikit_learn
+matplotlib
+jax
+jaxlib
+flax
+optax
+typing-extensions
+pyyaml
+pandas
+seaborn
+scipy

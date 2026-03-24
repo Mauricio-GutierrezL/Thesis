@@ -1,0 +1,8 @@
+thesis/runs/logs_root/
+thesis/runs/logs_thesis/
+paper/results/
+paper/plots/profiling_results/
+.venv/
+**/__pycache__/
+*.pyc
+desktop.ini

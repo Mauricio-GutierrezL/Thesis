@@ -1,0 +1,248 @@
+
+
+\paragraph{A case study: the Bowles--Ahmed--Schuld benchmark.}
+
+To address these issues, \textcite{bowles2024better} develop an open-source benchmarking suite based on PennyLane and conduct a large-scale empirical study. They systematically compare 12 influential QML models on 6 binary classification tasks, which, by varying problem parameters, generate 160 individual datasets grouped into 10 benchmarks.\footnote{Code and datasets are publicly available; see \textcite{bowles2024better} for links.} The models include various variational quantum neural networks, convolutional QNNs, and quantum kernel methods, alongside standard ``out-of-the-box'' classical baselines. The datasets are deliberately \emph{synthetic} or heavily controlled to probe specific aspects of learning performance:
+\begin{itemize}
+  \item some benchmarks vary the \emph{input dimension} to test how models scale with feature count, and
+  \item others vary a \emph{difficulty parameter} that controls separability, nonlinearity, or noise, in order to study robustness as tasks become harder.
+\end{itemize}
+Examples include linearly separable data, bars-and-stripes patterns, downscaled MNIST, a hidden-manifold model, the ``two curves'' dataset, and a construction based on multiple hyperplanes and parity labels.\cite{bowles2024better}
+
+Despite being ``small-scale'' in terms of qubit numbers (practically limited to roughly 10--20 qubits because of simulation costs and the need for hyperparameter search), the study already reveals several consistent patterns:
+
+\begin{itemize}
+  \item \textbf{Classical models typically outperform quantum ones.}  
+  Across benchmarks, standard classical classifiers generally achieve higher accuracy than the quantum models when both are given comparable levels of tuning. This holds even though the quantum models are taken from highly-cited proposals and implemented carefully.
+  
+  \item \textbf{Quantum circuits without entanglement perform surprisingly well.}  
+  For many architectures, removing entangling gates---so that each qubit is processed independently---does not significantly harm performance, and sometimes even improves it. In other words, models that are provably or plausibly classically simulable at scale can match or surpass their fully entangling counterparts. This raises questions about whether the observed performance is due to genuinely quantum effects or to more generic properties such as nonlinearity and overparameterisation.
+  
+  \item \textbf{Hybrid models do not show a clear quantum advantage.}  
+  For architectures where quantum circuits appear as layers inside a larger classical pipeline (e.g., quantum feature maps feeding classical networks or quantum kernels inside SVM-like models), the ``quantum layer'' does not consistently provide benefits beyond what a classical layer with similar structure could do. In some cases it behaves more like a noisy bottleneck than a useful feature extractor.
+  
+  \item \textbf{Certain encodings perform poorly.}  
+  Models based on amplitude encoding, which theoretically allow exponentially many features in a small number of qubits, perform badly on the considered classification tasks, even if multiple copies of the input state are provided. This suggests that expressivity alone is not enough: the induced decision boundaries and inductive biases may be poorly matched to the structure of typical learning problems.
+  
+  \item \textbf{Failure on simple benchmarks.}  
+  Perhaps most strikingly, several quantum models struggle on the simplest, linearly separable datasets in the benchmark. While linear classifiers and basic classical models can solve these tasks almost perfectly, many QML models fail to reach comparable performance, indicating optimisation difficulties or poorly aligned inductive biases.
+\end{itemize}
+
+Beyond headline numbers, these results raise deeper conceptual questions: What inductive biases do current quantum models implement? In which regimes does ``quantumness'' (for example, entanglement or non-classical kernels) actually help? And which specific classes of problems might genuinely benefit from quantum properties rather than being solvable just as well by classical surrogates? \textcite{bowles2024better} argue that we currently lack satisfactory answers, precisely because our benchmarks and models have not been analysed along these dimensions.
+
+\paragraph{Limitations of common datasets and the MNIST example.}
+
+A concrete illustration of the benchmarking problem arises from the widespread use of MNIST as a ``standard'' image classification dataset, both in classical deep learning and in QML. For quantum circuits, however, running on error-free hardware is not yet possible, and full-state simulation with hundreds of qubits is infeasible. As a consequence, QML studies typically apply heavy dimensionality reduction (e.g., via PCA) to compress the original $784$-dimensional images into tens of features or less.\cite{bowles2024better}
+
+While this makes classical simulation feasible, it also breaks comparability with the classical deep learning literature:
+\begin{itemize}
+  \item The baseline to beat becomes unclear: reducing MNIST to, say, two principal components turns, for example, the ``3 vs 5'' problem into two overlapping blobs where even simple models perform differently than on the original high-dimensional data.
+  \item Many QML papers use hybrid pipelines where convolutional neural networks or tensor-network layers already extract features before the quantum circuit, so that the ``quantum'' part receives a heavily processed, low-dimensional representation. Any observed improvement then becomes difficult to attribute specifically to the quantum component.
+\end{itemize}
+\textcite{bowles2024better} therefore argue that carefully designed, lower-dimensional benchmarks---such as the 1D-MNIST variant or synthetic datasets with controlled structure---may be more appropriate for current QML studies than aggressively downscaled versions of high-dimensional benchmarks originally designed for deep learning.
+
+\paragraph{Small-scale hardware and simulation constraints.}
+
+Another layer of difficulty comes from the resource demands of QML benchmarks. Variational models, kernel methods, and hybrid architectures all rely on repeatedly evaluating quantum circuits over many training steps and hyperparameter configurations. In classical simulations, the cost grows exponentially with the number of qubits, and realistic hyperparameter searches (with cross-validation) require evaluating hundreds of thousands or millions of circuits.\cite{bowles2024better} Even with substantial CPU or GPU resources, this makes exhaustive benchmarks beyond $\sim 10$--$20$ qubits practically infeasible. On real devices, noise and limited shot budgets introduce yet another set of trade-offs.
+
+As a result, many QML benchmarks operate in a regime that is simultaneously:
+\begin{itemize}
+  \item small enough to be classically simulable, so that classical baselines can in principle be pushed very far, and
+  \item too small and noisy to display clear-cut asymptotic advantages that might only emerge at larger scales.
+\end{itemize}
+This tension makes it even more important to design benchmarks that do not over-interpret small performance differences or rely on cherry-picked scenarios.
+
+
+\subsection{Variational Quantum Classifiers (VQCs)}
+Variational Quantum Classifiers are quantum machine learning models based on \textit{variational quantum algorithms (VQAs)}. These algorithms combine a quantum circuit that depends on a vector of parameters with a classical optimization routine to minimize a cost function.
+
+A VQC receives a classical input vector $\mathbf{x} \in \mathbb{R}^n$. First, the data is encoded into a quantum state using a \textit{quantum feature map}, a unitary transformation $U_\phi(\mathbf{x})$ that acts on the initial state:
+\[
+\ket{\psi_\mathbf{x}} = U_\phi(\mathbf{x}) \ket{0}^{\otimes n}
+\]
+Here, rotation gates are used to encode classical features into quantum states. For each feature \( x_j \), a corresponding qubit \( j \) is rotated by an angle proportional to the feature:
+\[
+\theta_j = c \cdot x_j
+\]
+where \( c \) is a scaling constant. Typically, a rotation gate such as \( R_y(\theta_j) \) or \( R_z(\theta_j) \) is applied. This operation rotates the qubit state on the Bloch sphere, embedding the data into a quantum Hilbert space
+
+Next, a \textit{parameterized quantum circuit} $U(\boldsymbol{\theta})$ is applied to the encoded state. This circuit consists of quantum gates, again typically rotation gates, with trainable parameters $\boldsymbol{\theta}$ independent of the input data. These are analogous to weights in NNs.:
+\[
+|\psi_{\text{out}}\rangle = U(\boldsymbol{\theta}) |\psi_x\rangle
+\]
+
+After processing, the output state is \textit{measured}. The measurement yields after many runs or shots a probability distribution over classical bitstrings, and this outcome is interpreted to make a prediction. For binary classification, a common approach is to compute the expectation value of a Pauli-Z operator on a target qubit:
+\[
+f(\mathbf{x}) = \bra{\psi_{\text{out}}} Z \ket{\psi_{\text{out}}}
+\]
+The result, which lies between $-1$ and $1$, is post-processed into a binary decision.
+
+The parameters $\boldsymbol{\theta}$ are updated using a classical optimizer that minimizes a cost function, typically comparing predicted outcomes to true labels. This hybrid loop—quantum state preparation, quantum transformation, classical evaluation, and classical optimization—is repeated until convergence \parencite{schuld2018circuit}. VQCs are attractive for implementation on near-term quantum devices because they can operate with shallow circuits and limited quantum resources. 
+
+
+
+
+Among the most commonly employed quantum neural network (QNN) architectures in the literature are the dressed QNN and the re-uploading QNN. Both serve as representative baseline models for benchmarking due to their balance between conceptual simplicity and expressive power. 
+
+The\textbf{ dressed variational quantum circuit or d-QNN} is embedded between two trainable classical linear layers. The first linear layer projects the input data into a vector of dimension equal to the number of qubits. These values are then encoded using angle encoding, which maps real-valued inputs to rotation parameters of single-qubit gates. After the trainable circuit ansatz and a local single qubit Pauli-$Z$ expectation value measurements, a second linear layer then maps the measurement results to the target output dimension. This architecture combines classical preprocessing and postprocessing with a quantum processing block, which increases flexibility but remains limited in expressivity since each data point is encoded only once \parencite{fellner2025quantum}.  
+
+The \textbf{re-uploading variational quantum circuit }works by encoding classical data repeatedly at multiple layers of the circuit. Specifically, input features are embedded sequentially using exponential angle encoding, and trainable ansatz layers composed of parameterized gates are inserted between encoding steps. This repeated re-uploading enriches the expressive power of the model. As with the d-QNN, local Pauli-$Z$ expectation values are measured at the end of the circuit and transformed into the target dimension by a linear output layer \parencite{fellner2025quantum}.  
+
+
+In terms of learning capacity, the d-QNN is structurally similar to a shallow neural network: classical preprocessing and postprocessing layers surround a single quantum circuit with fixed encoding, which limits the model essentially to linear decision boundaries. Its performance is therefore expected to be comparable to that of single-layer perceptrons. By contrast, the ru-QNN repeatedly re-encodes the data at multiple circuit depths, thereby enabling the representation of nonlinear functions. This increased expressivity makes the ru-QNN analogous to a multilayer perceptron (MLP), and its performance can be meaningfully compared to small neural networks.
+
+\begin{figure}[ht]
+    \centering
+    \includegraphics[width=0.9\textwidth]{vqc_diagram.png} % Replace with actual filename
+    \caption{
+        Schematic of a Variational Quantum Classifier (VQC), adapted from \textcite{mittal2023variational}. The computation begins with $n$ qubits initialized in the state $\ket{0}^{\otimes n}$. The classical input vector $\mathbf{x} \in \mathbb{R}^n$ is embedded into a quantum state via a data-encoding unitary $U_\phi(\mathbf{x})$, known as the quantum feature map. This maps classical data into a high-dimensional Hilbert space. The state is then processed by a parameterized quantum circuit $U(\boldsymbol{\theta})$ with trainable parameters. These variational blocks are often repeated multiple times (denoted by hyperparameter depth $d$) to increase expressivity. After the final unitary transformation, the qubits are measured. The measurement outcomes are used to compute a cost function, typically defined over expectation values of observables. A classical optimizer then updates the parameters $\boldsymbol{\theta}$ to minimize the cost and this hybrid quantum–classical loop continues until it find this minimal cost convergence.}
+    \label{fig:vqc_architecture_detailed}
+\end{figure}
+
+
+
+
+\section{Classical Machine Learning Models}
+
+\subsection{Overview of Supervised Learning}
+
+\chapter{Methodology}
+\label{chap:methodology}
+This study investigates whether Variational Quantum Classifiers (VQCs) can achieve performance comparable to established classical supervised learning models on benchmark datasets. The comparison is meaningful because the selected baselines represent the main paradigms of machine learning: linear (Logistic Regression), kernel-based (Support Vector Machines, Kernel Ridge Regression), probabilistic (Naive Bayes, Gaussian Processes), distance-based (k-Nearest Neighbors), and neural (Multilayer Perceptron). Together, these models provide a comprehensive reference frame for situating VQCs within the landscape of supervised learning.
+
+
+
+Past performances and expected. asdasds
+
+\section{Experimental Setup}
+\label{sec:setup}
+
+\subsection{Datasets}
+The experiment are to be conducted on benchmark datasets of varying complexity:
+\begin{itemize}
+    \item \textbf{Iris, Wine} – Small, well-known datasets with varying class balance and feature correlation.
+    \item \textbf{Digits, Fashion-MNIST } – Higher-dimensional datasets to assess model scalability.
+    \item \textbf{Blobs, Moons} – 2D separable and non-separable data for visual boundary analysis.
+\end{itemize}
+
+\subsection{Preprocessing}
+
+All datasets were preprocessed to ensure comparability across models and to improve training stability. A key step in this process was \textit{normalization}, which refers to the transformation of input features so that they lie within a standardized range or distribution. This prevents features with larger numeric ranges from dominating the learning process and helps models converge more efficiently.
+
+Two common normalization methods were used depending on the dataset and model:
+
+\textbf{Min-Max Scaling} rescales each feature to a fixed interval, typically $[0,1]$, using the formula:
+\[
+x' = \frac{x - x_{\min}}{x_{\max} - x_{\min}}
+\]
+
+
+\textbf{Standard Scaling (Z-score Normalization)} transforms each feature to have zero mean and unit variance:
+\[
+x' = \frac{x - \mu}{\sigma}
+\]
+where $\mu$ and $\sigma$ are the mean and standard deviation of the feature, respectively. 
+
+\subsection{Dataset Split}
+After normalization, each dataset was split into \textit{training} and \textit{test} sets to evaluate generalization performance. The training set is used to fit the model parameters, while the test set provides an unbiased estimate of how the model performs on unseen data. To ensure reproducibility, the split was performed using a \textit{fixed random seed}, which guarantees that the same data partitioning is obtained in every run. This makes experimental comparisons reliable and consistent.
+
+
+\subsection{Classical Models}
+Key hyperparameters of each.
+
+\subsection{Quantum Model: Variational Quantum Classifier (VQC)}
+
+
+\begin{itemize}
+    \item VQC architectures considered.
+    \item Feature maps: ZZFeatureMap, exponential angle encoding.
+
+    \item Ansatz types: RealAmplitudes, EfficientSU2, TwoLocal.
+    \item Variants: standard VQC, deep VQC, data re-uploading, dressed QNN.
+    \item Qubit counts (after PCA).
+    \item Circuit depths choices.
+    \item Measurement scheme (Pauli-Z expectation values).
+    \item Why these: compatible with Qiskit, reflects common practices in VQC research
+\end{itemize}
+
+
+
+\subsection{Training Procedure}
+
+
+\begin{itemize}
+    \item Classical models: scikit-learn training routines, CV setup.
+    \item Quantum models: optimizers (SPSA, COBYLA, L-BFGS-B), shot counts, number of iterations.
+
+
+    \item Backends: Aer simulator (ideal + noisy).
+Aer simulator is the main simulation framework for running quantum circuits on a classical computer. It has different backends (execution modes),
+
+Justification: chosen optimizers handle noisy gradients; simulators enable fair and reproducible testing.
+
+\end{itemize}
+
+
+
+\subsection{Evaluation Metrics}
+The models were evaluated using:
+\begin{itemize}
+    \item Accuracy and F1-Score
+    \item Training time and number of parameters
+    \item Robustness to feature noise
+    \item Performance under small data regimes
+    \item Visualization of decision boundaries 
+\end{itemize}
+
+also why these
+
+\subsection{Experimental Protocol and Tools and Environment}
+\begin{itemize}
+    \item Train/test split or k-fold cross-validation.
+    
+In addition, \textit{cross-validation} was optionally used during model selection and hyperparameter tuning to improve robustness. In $k$-fold cross-validation, the training set is divided into $k$ equally sized folds. The model is trained $k$ times, each time using $k-1$ folds for training and the remaining fold for validation. The results are then averaged across folds to obtain a more stable performance estimate. This approach reduces the risk of overfitting to a particular train-test split and provides a better understanding of model performance on limited data.
+
+    \item Number of repetitions.
+    \item Random seed control.
+    \item Software: Python, scikit-learn, Qiskit.
+    \item Hardware: CPU/GPU specs.
+    \item For transparency, reproducibility, reliability.
+\end{itemize}
+
+
+\chapter{Results and Discussion}
+\label{chap:results}
+
+This chapter presents the experimental evaluation of Variational Quantum Classifiers (VQCs) in comparison to a range of classical supervised learning models. The discussion is divided into two main parts: a quantitative analysis of model performance and a qualitative discussion of interpretability, complexity, and applicability. The experiments were designed to assess classification accuracy, robustness, and computational feasibility under various settings.
+
+
+\section{Quantitative Comparison}
+\label{sec:quantitative}
+
+This section presents numerical results comparing VQCs and classical models.
+
+\begin{itemize}
+    \item \textbf{Accuracy Across Datasets:} Tabulated and graphical comparison of test accuracy.
+    \item \textbf{Robustness to Noise and Small Sample Sizes:} Controlled experiments with added noise or reduced training size.
+    \item \textbf{Training Time and Resource Use:} Timing results and resource overhead.
+    \item \textbf{Visualization of Decision Boundaries}
+\end{itemize}
+
+\section{Qualitative Analysis}
+\label{sec:qualitative}
+
+This section provides a broader discussion on the interpretability, feasibility, and practicality of the compared models.
+
+\begin{itemize}
+    \item \textbf{Model Strengths and Weaknesses:} Comparative review of performance patterns per model.
+    \item \textbf{Interpretability and Complexity:} Transparency of decision functions, number of parameters, ease of tuning.
+    \item \textbf{Generalization Capability:} Overfitting tendencies and consistency across datasets.
+    \item \textbf{Feasibility in Real-World Scenarios:} Scalability and hardware compatibility for VQC; real-time application potential.
+\end{itemize}
+
+
+
+\chapter{Conclusion and Future Work}
+% ... contenido ...
+
+% References
