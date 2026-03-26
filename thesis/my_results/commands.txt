@@ -1,0 +1,34 @@
+ # For Testing 
+
+ python scripts/score_with_best_hyperparameters.py `
+>>   --classifier-name CircuitCentricClassifier `
+>>   --trainset-path "linearly_separable\linearly_separable_2d_train.csv" `
+>>   --testset-path "linearly_separable\linearly_separable_2d_test.csv" `
+>>   --hyperparams-path "my_results\results\CircuitCentricClassifier_linearly_separable_2d_train_GridSearchCV-best-hyperparameters.csv" `
+>>   --results-path ".\my_results" `
+>>   --clean True `
+>>   --n-jobs -1
+
+# For Train/Validate
+
+python scripts/run_hyperparameter_search.py 
+--model IQPKernelClassifier 
+--dataset-path "thesis\datasets_tests\linearly_separable\linearly_separable_2d_train.csv" 
+--results-path "thesis\my_results" 
+--n-jobs -1 
+--clean True
+--hyperparameter-scoring accuracy roc_auc `
+--hyperparameter-refit accuracy
+
+CircuitCentricClassifier
+CircuitCentricClassifierHalfSeparable
+CircuitCentricClassifierSeparable
+
+linearly_separable/linearly_separable_2d_train.csv
+...
+linearly_separable/linearly_separable_20d_train.csv
+
+python scripts\run_hyperparameter_search.py --model CircuitCentricClassifierSeparable --dataset-path "linearly_separable\linearly_separable_3d_train.csv" --results-path ".\my_results" --n-jobs -1 --clean True --hyperparameter-scoring accuracy roc_auc
+
+"CircuitCentricClassifier","CircuitCentricClassifierHalfSeparable",
+$models=@("CircuitCentricClassifierSeparable"); foreach($m in $models){ for($d=3;$d -le 20;$d++){ python scripts\run_hyperparameter_search.py --model $m --dataset-path "linearly_separable\linearly_separable_${d}d_train.csv" --results-path ".\my_results" --n-jobs -1 --clean True } }

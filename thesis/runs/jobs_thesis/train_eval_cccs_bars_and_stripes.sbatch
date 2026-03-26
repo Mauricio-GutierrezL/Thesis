@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 #SBATCH --job-name=ccc_bas_train_eval
 #SBATCH --account=thes2204
-#SBATCH --partition=c23ms
-#SBATCH --time=12:00:00
-#SBATCH --cpus-per-task=16
-#SBATCH --mem-per-cpu=2500M
+#SBATCH --partition=c23ml
+#SBATCH --time=24:00:00
+#SBATCH --cpus-per-task=8
+#SBATCH --mem-per-cpu=6G
 #SBATCH --output=/home/fwm91820/qml_benchmarks/qml-benchmarks-main/thesis/runs/logs_thesis/%x-%A_%a.out
 #SBATCH --error=/home/fwm91820/qml_benchmarks/qml-benchmarks-main/thesis/runs/logs_thesis/%x-%A_%a.err
-#SBATCH --array=0-11%6
+#SBATCH --array=0-11%2
 
 set -euo pipefail
 
@@ -27,7 +27,7 @@ export OMP_NUM_THREADS=1
 export MKL_NUM_THREADS=1
 export OPENBLAS_NUM_THREADS=1
 export NUMEXPR_NUM_THREADS=1
-export XLA_FLAGS="--xla_cpu_multi_thread_eigen=true intra_op_parallelism_threads=${SLURM_CPUS_PER_TASK}"
+export XLA_FLAGS="--xla_cpu_multi_thread_eigen=false intra_op_parallelism_threads=1"
 
 python - <<'PY'
 from importlib import import_module
@@ -100,6 +100,29 @@ echo "TEST=$TEST"
 echo "OUT_DIR=$OUT_DIR"
 python -V
 
+HPS_N_JOBS=2
+SCORE_N_JOBS=2
+
+if [[ "$MODEL_LABEL" != "CircuitCentricClassifierHalfSeparableRandom50" ]]; then
+  HPS_N_JOBS=4
+  SCORE_N_JOBS=4
+fi
+
+if [[ "$DATASET_NAME" == *"32_x_32"* ]]; then
+  HPS_N_JOBS=1
+  SCORE_N_JOBS=1
+elif [[ "$DATASET_NAME" == *"16_x_16"* ]]; then
+  if (( HPS_N_JOBS > 2 )); then
+    HPS_N_JOBS=2
+  fi
+  if (( SCORE_N_JOBS > 2 )); then
+    SCORE_N_JOBS=2
+  fi
+fi
+
+echo "HPS_N_JOBS=$HPS_N_JOBS"
+echo "SCORE_N_JOBS=$SCORE_N_JOBS"
+
 [[ -f "$TRAIN" ]] || { echo "Missing train dataset: $TRAIN"; exit 2; }
 [[ -f "$TEST" ]] || { echo "Missing test dataset: $TEST"; exit 2; }
 
@@ -110,7 +133,7 @@ if [[ ! -f "$FINAL_HPS" ]]; then
     --model "$MODEL_CLASS" \
     --dataset-path "$TRAIN" \
     --results-path "$OUT_DIR" \
-    --n-jobs "$SLURM_CPUS_PER_TASK" \
+    --n-jobs "$HPS_N_JOBS" \
     --clean False \
     --hyperparameter-scoring accuracy roc_auc \
     --hyperparameter-refit accuracy
@@ -128,7 +151,7 @@ if [[ ! -f "$FINAL_SCORE" ]]; then
     --hyperparams-path "$FINAL_HPS" \
     --results-path "$OUT_DIR" \
     --clean False \
-    --n-jobs "$SLURM_CPUS_PER_TASK"
+    --n-jobs "$SCORE_N_JOBS"
 
   rename_halfsep_outputs
 fi
