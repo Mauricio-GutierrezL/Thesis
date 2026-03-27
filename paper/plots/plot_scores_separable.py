@@ -109,6 +109,8 @@ clfs_qnn = [
 clfs_kernel = [
     "SVC",
     "IQPKernelClassifier",
+    "IQPKernelClassifierHalfSeparable",
+    "IQPKernelClassifierSeparable",
     "ProjectedQuantumKernel",
     "QuantumKitchenSinks",
     "SeparableKernelClassifier",
@@ -130,6 +132,8 @@ color = {
     "ConvolutionalNeuralNetwork": "black",
     "SVC": "black",
     "IQPKernelClassifier": "darkgray",
+    "IQPKernelClassifierHalfSeparable": "indianred",
+    "IQPKernelClassifierSeparable": "lightcoral",
     "ProjectedQuantumKernel": "darkgray",
     "QuantumKitchenSinks": "darkgray",
     "QuantumBoltzmannMachine": "darkgray",

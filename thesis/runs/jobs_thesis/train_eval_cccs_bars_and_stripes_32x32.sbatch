@@ -1,21 +1,24 @@
 #!/usr/bin/env bash
-#SBATCH --job-name=ccc_hm_train_eval
+#SBATCH --job-name=ccc_bas_train_eval_32
 #SBATCH --account=thes2204
 #SBATCH --partition=c23mm
 #SBATCH --time=24:00:00
 #SBATCH --cpus-per-task=8
-#SBATCH --mem-per-cpu=4G
+#SBATCH --mem=96G
 #SBATCH --output=/home/fwm91820/qml_benchmarks/qml-benchmarks-main/thesis/runs/logs_thesis/%x-%A_%a.out
 #SBATCH --error=/home/fwm91820/qml_benchmarks/qml-benchmarks-main/thesis/runs/logs_thesis/%x-%A_%a.err
-#SBATCH --array=0-56%4
-
+#SBATCH --array=3,7,11%1
 
 set -euo pipefail
 
 ROOT="/home/fwm91820/qml_benchmarks/qml-benchmarks-main"
-DATA_DIR="$ROOT/thesis/datasets_tests/hidden_manifold"
-OUT_BASE="$ROOT/thesis/my_results/hidden_manifold"
+DATA_DIR="$ROOT/thesis/datasets_tests/bars_and_stripes"
+OUT_BASE="$ROOT/thesis/my_results/bars_and_stripes"
 LOG_DIR="$ROOT/thesis/runs/logs_thesis"
+TRAIN_GLOB='bars_and_stripes_*noise_train.csv'
+
+# The 32_x_32 bars-and-stripes tasks peaked at about 67G RSS on c23mm, so
+# this dedicated script reserves 96G to leave headroom for the full benchmark.
 
 mkdir -p "$LOG_DIR" "$OUT_BASE"
 ulimit -n 4096 || true
@@ -29,13 +32,13 @@ export OPENBLAS_NUM_THREADS=1
 export NUMEXPR_NUM_THREADS=1
 export XLA_FLAGS="--xla_cpu_multi_thread_eigen=false intra_op_parallelism_threads=1"
 
-python - <<'PY'
+python - <<'INNERPY'
 from importlib import import_module
 m = import_module('qml_benchmarks.models')
 for name in ['CircuitCentricClassifier', 'CircuitCentricClassifierHalfSeparable', 'CircuitCentricClassifierSeparable']:
     getattr(m, name)
 print('BATCH_ENV_OK')
-PY
+INNERPY
 
 MODEL_LABELS=(
   "CircuitCentricClassifier"
@@ -49,7 +52,7 @@ MODEL_CLASSES=(
   "CircuitCentricClassifierSeparable"
 )
 
-mapfile -t TRAINS < <(ls -1 "$DATA_DIR"/hidden_manifold-6manifold-*d_train.csv | sort -V)
+mapfile -t TRAINS < <(find "$DATA_DIR" -maxdepth 1 -name "$TRAIN_GLOB" -type f | sort -V)
 N_TRAINS=${#TRAINS[@]}
 TOTAL=$(( ${#MODEL_CLASSES[@]} * N_TRAINS ))
 
@@ -67,6 +70,11 @@ TRAIN="${TRAINS[$DATA_INDEX]}"
 TEST="${TRAIN/_train.csv/_test.csv}"
 DATASET_NAME="$(basename "$TRAIN" .csv)"
 DATASET_NAME="${DATASET_NAME%_train}"
+
+if [[ "$DATASET_NAME" != *"32_x_32"* ]]; then
+  echo "ERROR: high-memory bars-and-stripes script is restricted to 32_x_32 datasets"
+  exit 6
+fi
 
 OUT_DIR="$OUT_BASE/$MODEL_LABEL"
 RESULTS_DIR="$OUT_DIR/results"
@@ -100,13 +108,8 @@ echo "TEST=$TEST"
 echo "OUT_DIR=$OUT_DIR"
 python -V
 
-HPS_N_JOBS=2
-SCORE_N_JOBS=2
-
-if [[ "$MODEL_LABEL" != "CircuitCentricClassifierHalfSeparableRandom50" ]]; then
-  HPS_N_JOBS=4
-  SCORE_N_JOBS=4
-fi
+HPS_N_JOBS=1
+SCORE_N_JOBS=1
 
 echo "HPS_N_JOBS=$HPS_N_JOBS"
 echo "SCORE_N_JOBS=$SCORE_N_JOBS"
@@ -117,14 +120,7 @@ echo "SCORE_N_JOBS=$SCORE_N_JOBS"
 cd "$ROOT"
 
 if [[ ! -f "$FINAL_HPS" ]]; then
-  srun python -u scripts/run_hyperparameter_search.py \
-    --model "$MODEL_CLASS" \
-    --dataset-path "$TRAIN" \
-    --results-path "$OUT_DIR" \
-    --n-jobs "$HPS_N_JOBS" \
-    --clean False \
-    --hyperparameter-scoring accuracy roc_auc \
-    --hyperparameter-refit accuracy
+  srun python -u scripts/run_hyperparameter_search.py     --model "$MODEL_CLASS"     --dataset-path "$TRAIN"     --results-path "$OUT_DIR"     --n-jobs "$HPS_N_JOBS"     --clean False     --hyperparameter-scoring accuracy roc_auc     --hyperparameter-refit accuracy
 
   rename_halfsep_outputs
 fi
@@ -132,14 +128,7 @@ fi
 [[ -f "$FINAL_HPS" ]] || { echo "Missing best hyperparams after HPS: $FINAL_HPS"; exit 3; }
 
 if [[ ! -f "$FINAL_SCORE" ]]; then
-  srun python scripts/score_with_best_hyperparameters.py \
-    --classifier-name "$MODEL_CLASS" \
-    --trainset-path "$TRAIN" \
-    --testset-path "$TEST" \
-    --hyperparams-path "$FINAL_HPS" \
-    --results-path "$OUT_DIR" \
-    --clean False \
-    --n-jobs "$SCORE_N_JOBS"
+  srun python scripts/score_with_best_hyperparameters.py     --classifier-name "$MODEL_CLASS"     --trainset-path "$TRAIN"     --testset-path "$TEST"     --hyperparams-path "$FINAL_HPS"     --results-path "$OUT_DIR"     --clean False     --n-jobs "$SCORE_N_JOBS"
 
   rename_halfsep_outputs
 fi

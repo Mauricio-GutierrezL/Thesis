@@ -83,6 +83,16 @@ hyper_parameter_settings = {
         "repeats": {"type": "list", "dtype": "int", "val": [1, 5, 10]},
         "C": {"type": "list", "dtype": "float", "val": [0.1, 1, 10, 100]},
     },
+    "IQPKernelClassifierHalfSeparable": {
+        "max_vmap": {"type": "list", "dtype": "int", "val": [1]},
+        "repeats": {"type": "list", "dtype": "int", "val": [1, 5, 10]},
+        "C": {"type": "list", "dtype": "float", "val": [0.1, 1, 10, 100]},
+    },
+    "IQPKernelClassifierSeparable": {
+        "max_vmap": {"type": "list", "dtype": "int", "val": [1]},
+        "repeats": {"type": "list", "dtype": "int", "val": [1, 5, 10]},
+        "C": {"type": "list", "dtype": "float", "val": [0.1, 1, 10, 100]},
+    },
     "IQPVariationalClassifier": {
         "max_vmap": {"type": "list", "dtype": "int", "val": [1]},
         "batch_size": {"type": "list", "dtype": "int", "val": [32]},

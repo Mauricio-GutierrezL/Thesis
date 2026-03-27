@@ -1,10 +1,11 @@
 # Copyright 2024 Xanadu Quantum Technologies Inc.
 # Licensed under the Apache License, Version 2.0
 
-"""Plot thesis aggregated rankings from thesis/my_results."""
+"""Plot aggregated CCC rankings from thesis/my_results for all completed benchmark families."""
 
 from collections import Counter
 from pathlib import Path
+import re
 import matplotlib
 
 matplotlib.use("Agg")
@@ -26,13 +27,35 @@ cmap = sns.diverging_palette(30, 255, l=60, as_cmap=True)
 DATASETS = {
     "linearly-separable": {
         "folder": "linearly_separable",
-        "values": range(2, 21),
-        "stem": lambda n: f"linearly_separable_{n}d",
+        "stem_regex": r"linearly_separable_(\d+)d",
+    },
+    "hidden-manifold": {
+        "folder": "hidden_manifold",
+        "stem_regex": r"hidden_manifold-6manifold-(\d+)d",
     },
     "hmm-diff": {
         "folder": "hidden_manifold_diff",
-        "values": range(2, 21),
-        "stem": lambda n: f"hidden_manifold-10d-{n}manifold",
+        "stem_regex": r"hidden_manifold-10d-(\d+)manifold",
+    },
+    "hyperplanes-diff": {
+        "folder": "hyperplanes_diff",
+        "stem_regex": r"hyperplanes-10d-from3d-(\d+)n",
+    },
+    "bars-and-stripes": {
+        "folder": "bars_and_stripes",
+        "stem_regex": r"bars_and_stripes_(\d+)_x_\d+_0\.5noise",
+    },
+    "mnist-pca": {
+        "folder": "mnist_pca",
+        "stem_regex": r"mnist_3-5_(\d+)d",
+    },
+    "mnist-pca-small": {
+        "folder": "mnist_pca-",
+        "stem_regex": r"mnist_3-5_(\d+)d-250",
+    },
+    "two-curves-diff": {
+        "folder": "two_curves_diff",
+        "stem_regex": r"two_curves-10d-(\d+)degree",
     },
 }
 
@@ -48,6 +71,27 @@ MODELS_NO_FIRST50 = [
 ]
 
 
+def iter_result_files(model_dir: Path):
+    for candidate in sorted(model_dir.glob("*_GridSearchCV-best-hyperparams-results.csv")):
+        yield candidate
+    results_dir = model_dir / "results"
+    if results_dir.exists():
+        for candidate in sorted(results_dir.glob("*_GridSearchCV-best-hyperparams-results.csv")):
+            yield candidate
+
+
+def parse_dataset_stem(model_name: str, result_file: Path, dataset_cfg: dict):
+    prefix = f"{model_name}_"
+    suffix = "_GridSearchCV-best-hyperparams-results.csv"
+    name = result_file.name
+    if not (name.startswith(prefix) and name.endswith(suffix)):
+        return None
+    dataset_stem = name[len(prefix) : -len(suffix)]
+    if re.fullmatch(dataset_cfg["stem_regex"], dataset_stem) is None:
+        return None
+    return dataset_stem
+
+
 def load_results(models) -> pd.DataFrame:
     frames = []
     for dataset_name, cfg in DATASETS.items():
@@ -57,10 +101,9 @@ def load_results(models) -> pd.DataFrame:
             if not model_dir.exists():
                 continue
 
-            for value in cfg["values"]:
-                dataset_stem = cfg["stem"](value)
-                result_file = model_dir / f"{model}_{dataset_stem}_GridSearchCV-best-hyperparams-results.csv"
-                if not result_file.exists():
+            for result_file in iter_result_files(model_dir):
+                dataset_stem = parse_dataset_stem(model, result_file, cfg)
+                if dataset_stem is None:
                     continue
 
                 df_new = pd.read_csv(result_file)
@@ -132,8 +175,13 @@ def create_ranking_set(models, suffix: str) -> None:
 
     suffix_part = f"-{suffix}" if suffix else ""
 
+    def ranking_name(base: str) -> str:
+        # The thesis figures now only contain the no-First50 comparison set,
+        # so keep the output names clean and stable.
+        return f"ranking-{base}.png" if suffix == "no-first50" else f"ranking-{base}{suffix_part}.png"
+
     df_plot = build_ranking_table(df, models)
-    save_ranking_plot(df_plot, FIGURES_DIR / f"ranking-all{suffix_part}.png")
+    save_ranking_plot(df_plot, FIGURES_DIR / ranking_name("all"))
 
     for dataset_name in DATASETS:
         df_dataset = df[df["dataset_family"] == dataset_name].copy()
@@ -142,13 +190,13 @@ def create_ranking_set(models, suffix: str) -> None:
         df_dataset_plot = build_ranking_table(df_dataset, models)
         save_ranking_plot(
             df_dataset_plot,
-            FIGURES_DIR / f"ranking-{dataset_name}{suffix_part}.png",
+            FIGURES_DIR / ranking_name(dataset_name),
             title=dataset_name,
         )
 
 
 def main() -> None:
-    create_ranking_set(MODELS, suffix="")
+    # Only emit the no-First50 ranking figures for the thesis comparison set.
     create_ranking_set(MODELS_NO_FIRST50, suffix="no-first50")
 
 

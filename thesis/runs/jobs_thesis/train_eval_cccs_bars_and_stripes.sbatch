@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 #SBATCH --job-name=ccc_bas_train_eval
 #SBATCH --account=thes2204
-#SBATCH --partition=c23ml
+#SBATCH --partition=c23mm
 #SBATCH --time=24:00:00
 #SBATCH --cpus-per-task=8
 #SBATCH --mem-per-cpu=6G
 #SBATCH --output=/home/fwm91820/qml_benchmarks/qml-benchmarks-main/thesis/runs/logs_thesis/%x-%A_%a.out
 #SBATCH --error=/home/fwm91820/qml_benchmarks/qml-benchmarks-main/thesis/runs/logs_thesis/%x-%A_%a.err
-#SBATCH --array=0-11%2
+#SBATCH --array=0,1,4,5,6,8,9%2
 
 set -euo pipefail
 
@@ -16,6 +16,10 @@ DATA_DIR="$ROOT/thesis/datasets_tests/bars_and_stripes"
 OUT_BASE="$ROOT/thesis/my_results/bars_and_stripes"
 LOG_DIR="$ROOT/thesis/runs/logs_thesis"
 TRAIN_GLOB='bars_and_stripes_*noise_train.csv'
+
+# The 32_x_32 bars-and-stripes tasks have repeatedly OOMed under the standard
+# 48G allocation. They are submitted via the dedicated high-memory script.
+HIGH_RISK_ARRAY_IDS=(3 7 11)
 
 mkdir -p "$LOG_DIR" "$OUT_BASE"
 ulimit -n 4096 || true
@@ -57,6 +61,14 @@ if (( SLURM_ARRAY_TASK_ID >= TOTAL )); then
   echo "ERROR: task id out of range"
   exit 1
 fi
+
+for high_risk_id in "${HIGH_RISK_ARRAY_IDS[@]}"; do
+  if (( SLURM_ARRAY_TASK_ID == high_risk_id )); then
+    echo "ERROR: task id $SLURM_ARRAY_TASK_ID is reserved for high-memory resubmission"
+    echo "Use thesis/runs/jobs_thesis/train_eval_cccs_bars_and_stripes_32x32.sbatch instead."
+    exit 5
+  fi
+done
 
 MODEL_INDEX=$(( SLURM_ARRAY_TASK_ID / N_TRAINS ))
 DATA_INDEX=$(( SLURM_ARRAY_TASK_ID % N_TRAINS ))

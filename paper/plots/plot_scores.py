@@ -105,6 +105,8 @@ clfs_qnn = [
 clfs_kernel = [
     "SVC",
     "IQPKernelClassifier",
+    "IQPKernelClassifierHalfSeparable",
+    "IQPKernelClassifierSeparable",
     "ProjectedQuantumKernel",
     "QuantumKitchenSinks",
 ]

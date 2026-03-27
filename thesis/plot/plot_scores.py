@@ -1,9 +1,10 @@
 # Copyright 2024 Xanadu Quantum Technologies Inc.
 # Licensed under the Apache License, Version 2.0
 
-"""Plot thesis Figure 11-style train/test accuracies from thesis/my_results."""
+"""Plot CCC train/test accuracies from thesis/my_results for all completed benchmark families."""
 
 from pathlib import Path
+import re
 import matplotlib
 
 matplotlib.use("Agg")
@@ -27,20 +28,47 @@ DATASETS = {
     "LINEARLY SEPARABLE": {
         "folder": "linearly_separable",
         "xlabel": "number of features",
-        "values": range(2, 21),
-        "stem": lambda n: f"linearly_separable_{n}d",
+        "stem_regex": r"linearly_separable_(\d+)d",
+    },
+    "HIDDEN MANIFOLD": {
+        "folder": "hidden_manifold",
+        "xlabel": "number of features",
+        "stem_regex": r"hidden_manifold-6manifold-(\d+)d",
     },
     "HIDDEN MANIFOLD DIFF": {
         "folder": "hidden_manifold_diff",
         "xlabel": "number of manifolds",
-        "values": range(2, 21),
-        "stem": lambda n: f"hidden_manifold-10d-{n}manifold",
+        "stem_regex": r"hidden_manifold-10d-(\d+)manifold",
+    },
+    "HYPERPLANES DIFF": {
+        "folder": "hyperplanes_diff",
+        "xlabel": "number of hyperplanes",
+        "stem_regex": r"hyperplanes-10d-from3d-(\d+)n",
+    },
+    "BARS & STRIPES": {
+        "folder": "bars_and_stripes",
+        "xlabel": "grid width",
+        "stem_regex": r"bars_and_stripes_(\d+)_x_\d+_0\.5noise",
+    },
+    "MNIST PCA": {
+        "folder": "mnist_pca",
+        "xlabel": "number of features",
+        "stem_regex": r"mnist_3-5_(\d+)d",
+    },
+    "MNIST PCA-": {
+        "folder": "mnist_pca-",
+        "xlabel": "number of features",
+        "stem_regex": r"mnist_3-5_(\d+)d-250",
+    },
+    "TWO CURVES DIFF": {
+        "folder": "two_curves_diff",
+        "xlabel": "degree",
+        "stem_regex": r"two_curves-10d-(\d+)degree",
     },
 }
 
 MODEL_ORDER = [
     "CircuitCentricClassifier",
-    "CircuitCentricClassifierHalfSeparableFirst50",
     "CircuitCentricClassifierHalfSeparableRandom50",
     "CircuitCentricClassifierSeparable",
 ]
@@ -80,6 +108,28 @@ def model_style(model_name, plotting_config, fallback_index):
     return color, marker, dashes
 
 
+def iter_result_files(model_dir: Path):
+    for candidate in sorted(model_dir.glob("*_GridSearchCV-best-hyperparams-results.csv")):
+        yield candidate
+    results_dir = model_dir / "results"
+    if results_dir.exists():
+        for candidate in sorted(results_dir.glob("*_GridSearchCV-best-hyperparams-results.csv")):
+            yield candidate
+
+
+def parse_dataset_value(model_name: str, result_file: Path, dataset_cfg: dict):
+    prefix = f"{model_name}_"
+    suffix = "_GridSearchCV-best-hyperparams-results.csv"
+    name = result_file.name
+    if not (name.startswith(prefix) and name.endswith(suffix)):
+        return None, None
+    dataset_stem = name[len(prefix) : -len(suffix)]
+    match = re.fullmatch(dataset_cfg["stem_regex"], dataset_stem)
+    if not match:
+        return None, None
+    return dataset_stem, int(match.group(1))
+
+
 def collect_dataset_frame(dataset_cfg, plotting_config):
     dataset_root = RESULTS_DIR / dataset_cfg["folder"]
     if not dataset_root.exists():
@@ -92,10 +142,9 @@ def collect_dataset_frame(dataset_cfg, plotting_config):
     frames = []
     for model_index, model_name in enumerate(ordered_models):
         model_dir = dataset_root / model_name
-        for value in dataset_cfg["values"]:
-            dataset_stem = dataset_cfg["stem"](value)
-            result_file = model_dir / f"{model_name}_{dataset_stem}_GridSearchCV-best-hyperparams-results.csv"
-            if not result_file.exists():
+        for result_file in iter_result_files(model_dir):
+            dataset_stem, value = parse_dataset_value(model_name, result_file, dataset_cfg)
+            if dataset_stem is None:
                 continue
 
             df_new = pd.read_csv(result_file)
@@ -106,6 +155,7 @@ def collect_dataset_frame(dataset_cfg, plotting_config):
             df_new = df_new.copy()
             df_new["Model"] = model_name
             df_new["n"] = value
+            df_new["dataset_stem"] = dataset_stem
             df_new["color"] = color
             df_new["marker"] = str(marker)
             df_new["dashes"] = str(dashes)
@@ -114,7 +164,9 @@ def collect_dataset_frame(dataset_cfg, plotting_config):
     if not frames:
         return pd.DataFrame(), ordered_models
 
-    return pd.concat(frames, ignore_index=True), ordered_models
+    df = pd.concat(frames, ignore_index=True)
+    df = df.sort_values(["n", "Model"]).reset_index(drop=True)
+    return df, ordered_models
 
 
 def plot_dataset(dataset_name, dataset_cfg, plotting_config):
@@ -191,15 +243,17 @@ def plot_dataset(dataset_name, dataset_cfg, plotting_config):
         frameon=False,
     )
 
+    out_name = dataset_cfg["folder"]
     plt.tight_layout(rect=[0, 0.12, 1, 1])
     plt.savefig(
-        FIGURES_DIR / f"score-{dataset_name}-qnn.png",
+        FIGURES_DIR / f"score-{out_name}-qnn.png",
         dpi=200,
         bbox_inches="tight",
         bbox_extra_artists=(legend,),
     )
     plt.close(fig)
-    print(f"Saved {FIGURES_DIR / f'score-{dataset_name}-qnn.png'}")
+    print(f"Saved {FIGURES_DIR / f'score-{out_name}-qnn.png'}")
+
 
 
 def main():

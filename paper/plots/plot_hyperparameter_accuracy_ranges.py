@@ -88,6 +88,8 @@ clfs_qnn = [
 
 clfs_kernel = [
     "IQPKernelClassifier",
+    "IQPKernelClassifierHalfSeparable",
+    "IQPKernelClassifierSeparable",
     "ProjectedQuantumKernel",
     "QuantumKitchenSinks",
     "SVC",

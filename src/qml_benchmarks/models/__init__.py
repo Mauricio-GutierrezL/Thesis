@@ -35,7 +35,11 @@ from qml_benchmarks.models.dressed_quantum_circuit import (
     DressedQuantumCircuitClassifierOnlyNN,
     DressedQuantumCircuitClassifierSeparable,
 )
-from qml_benchmarks.models.iqp_kernel import IQPKernelClassifier
+from qml_benchmarks.models.iqp_kernel import (
+    IQPKernelClassifier,
+    IQPKernelClassifierHalfSeparable,
+    IQPKernelClassifierSeparable,
+)
 from qml_benchmarks.models.iqp_variational import IQPVariationalClassifier
 from qml_benchmarks.models.projected_quantum_kernel import ProjectedQuantumKernel
 from qml_benchmarks.models.quantum_boltzmann_machine import (

@@ -6,6 +6,7 @@ cd "$ROOT"
 
 jobs=(
   "thesis/runs/jobs_thesis/train_eval_cccs_bars_and_stripes.sbatch"
+  "thesis/runs/jobs_thesis/train_eval_cccs_bars_and_stripes_32x32.sbatch"
   "thesis/runs/jobs_thesis/train_eval_cccs_hidden_manifold.sbatch"
   "thesis/runs/jobs_thesis/train_eval_cccs_hyperplanes_diff.sbatch"
   "thesis/runs/jobs_thesis/train_eval_cccs_mnist_pca.sbatch"

@@ -13,6 +13,8 @@ color:
   WeiNet: "olivedrab"
   ConvolutionalNeuralNetwork: "black"
   IQPKernelClassifier: "firebrick"
+  IQPKernelClassifierHalfSeparable: "indianred"
+  IQPKernelClassifierSeparable: "lightcoral"
   ProjectedQuantumKernel: "red"
   QuantumKitchenSinks: "tomato"
   QuantumBoltzmannMachine: "navy"
@@ -36,6 +38,8 @@ marker:
   WeiNet: "s"
   ConvolutionalNeuralNetwork: "o"
   IQPKernelClassifier: "v"
+  IQPKernelClassifierHalfSeparable: "<"
+  IQPKernelClassifierSeparable: "o"
   ProjectedQuantumKernel: "s"
   QuantumKitchenSinks: "^"
   QuantumBoltzmannMachine: 'X'
@@ -59,6 +63,8 @@ dashes:
   QuanvolutionalNeuralNetwork: ()
   ConvolutionalNeuralNetwork: (3, 2)
   IQPKernelClassifier: ()
+  IQPKernelClassifierHalfSeparable: (4, 2)
+  IQPKernelClassifierSeparable: (1, 2)
   ProjectedQuantumKernel: ()
   QuantumKitchenSinks: ()
   QuantumBoltzmannMachine: ()

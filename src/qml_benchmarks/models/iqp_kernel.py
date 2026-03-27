@@ -13,16 +13,44 @@
 # limitations under the License.
 
 import time
-import pennylane as qml
-import numpy as np
+from itertools import combinations
+
 import jax
 import jax.numpy as jnp
+import numpy as np
+import pennylane as qml
 from sklearn.base import BaseEstimator, ClassifierMixin
-from sklearn.svm import SVC
 from sklearn.preprocessing import MinMaxScaler
+from sklearn.svm import SVC
+
 from qml_benchmarks.model_utils import chunk_vmapped_fn
 
 jax.config.update("jax_enable_x64", True)
+
+
+def _full_iqp_entangler_pattern(wires):
+    return tuple(combinations(wires, 2))
+
+
+def _random_half_iqp_patterns(wires, n_repeats, random_state):
+    """Keep about half of the full IQP ZZ edges using a seeded random subset per repeat.
+
+    This mirrors the CCC half-separable ablation more closely: each repeat uses a fresh
+    random 50% subset of the all-to-all ZZ edges, but the choice is deterministic for a
+    fixed ``random_state``.
+    """
+    full_pattern = _full_iqp_entangler_pattern(wires)
+    if len(full_pattern) <= 1:
+        return tuple(tuple(full_pattern) for _ in range(n_repeats))
+
+    target_n_edges = max(1, len(full_pattern) // 2)
+    patterns = []
+    for repeat in range(n_repeats):
+        rng = np.random.default_rng(random_state + 1000 * repeat)
+        idx = np.sort(rng.choice(len(full_pattern), size=target_n_edges, replace=False))
+        patterns.append(tuple(full_pattern[i] for i in idx))
+
+    return tuple(patterns)
 
 
 class IQPKernelClassifier(BaseEstimator, ClassifierMixin):
@@ -40,12 +68,9 @@ class IQPKernelClassifier(BaseEstimator, ClassifierMixin):
     ):
         r"""
         Kernel version of the classifier from https://arxiv.org/pdf/1804.11326v2.pdf.
-        The kernel function is given by
-
-        .. math::
-            k(x,x')=\vert\langle 0 \vert U^\dagger(x')U(x)\vert 0 \rangle\vert^2
-
-        where :math:`U(x)` is an IQP circuit implemented via Pennylane's `IQPEmbedding`.
+        The kernel is ``k(x, x') = |<0| U(x')^dagger U(x) |0>|^2``, where ``U(x)``
+        is an IQP circuit with the usual single-qubit encoding and a configurable
+        ZZ entangler pattern.
 
         We precompute the kernel matrix from the data directly, and pass it to scikit-learn's support vector
         classifier SVC. This  allows us to benefit from JAX parallelisation when computing the kernel
@@ -66,7 +91,6 @@ class IQPKernelClassifier(BaseEstimator, ClassifierMixin):
             scaling (float): Factor by which to scale the input data.
             random_state (int): seed used for reproducibility.
         """
-        # attributes that do not depend on data
         self.repeats = repeats
         self.C = C
         self.jit = jit
@@ -78,18 +102,33 @@ class IQPKernelClassifier(BaseEstimator, ClassifierMixin):
         self.random_state = random_state
         self.rng = np.random.default_rng(random_state)
 
-        # data-dependant attributes
-        # which will be initialised by calling "fit"
         self.params_ = None
         self.n_qubits_ = None
-        self.scaler = None  # data scaler will be fitted on training data
+        self.scaler = None
         self.circuit = None
 
     def generate_key(self):
         return jax.random.PRNGKey(self.rng.integers(1000000))
 
+    def _repeat_entangler_patterns(self, wires):
+        full_pattern = _full_iqp_entangler_pattern(wires)
+        return tuple(full_pattern for _ in range(self.repeats))
+
+    def _apply_iqp_embedding(self, features, wires, repeat_patterns):
+        for pattern in repeat_patterns:
+            for idx, wire in enumerate(wires):
+                qml.Hadamard(wires=wire)
+                qml.RZ(features[idx], wires=wire)
+
+            for wire_pair in pattern:
+                idx_a = wires.index(wire_pair[0])
+                idx_b = wires.index(wire_pair[1])
+                qml.MultiRZ(features[idx_a] * features[idx_b], wires=wire_pair)
+
     def construct_circuit(self):
         dev = qml.device(self.dev_type, wires=self.n_qubits_)
+        wires = tuple(range(self.n_qubits_))
+        repeat_patterns = self._repeat_entangler_patterns(wires)
 
         @qml.qnode(dev, **self.qnode_kwargs)
         def circuit(x):
@@ -101,15 +140,9 @@ class IQPKernelClassifier(BaseEstimator, ClassifierMixin):
             Returns:
                 (float) the value of the kernel fucntion K(x_1,x_2)
             """
-            qml.IQPEmbedding(
-                x[: self.n_qubits_], wires=range(self.n_qubits_), n_repeats=self.repeats
-            )
-            qml.adjoint(
-                qml.IQPEmbedding(
-                    x[self.n_qubits_ :],
-                    wires=range(self.n_qubits_),
-                    n_repeats=self.repeats,
-                )
+            self._apply_iqp_embedding(x[: self.n_qubits_], wires, repeat_patterns)
+            qml.adjoint(self._apply_iqp_embedding)(
+                x[self.n_qubits_ :], wires, repeat_patterns
             )
             return qml.probs()
 
@@ -131,7 +164,6 @@ class IQPKernelClassifier(BaseEstimator, ClassifierMixin):
         dim1 = len(X1)
         dim2 = len(X2)
 
-        # concatenate all pairs of vectors
         Z = jnp.array(
             [np.concatenate((X1[i], X2[j])) for i in range(dim1) for j in range(dim2)]
         )
@@ -142,7 +174,6 @@ class IQPKernelClassifier(BaseEstimator, ClassifierMixin):
         )
         kernel_values = self.batched_circuit(Z)[:, 0]
 
-        # reshape the values into the kernel matrix
         kernel_matrix = np.reshape(kernel_values, (dim1, dim2))
 
         return kernel_matrix
@@ -186,8 +217,6 @@ class IQPKernelClassifier(BaseEstimator, ClassifierMixin):
         kernel_matrix = self.precompute_kernel(X, X)
 
         start = time.time()
-        # we are updating this value here, in case it was
-        # changed after initialising the model
         self.svm.C = self.C
         self.svm.fit(kernel_matrix, y)
         end = time.time()
@@ -234,9 +263,22 @@ class IQPKernelClassifier(BaseEstimator, ClassifierMixin):
         """
         if preprocess:
             if self.scaler is None:
-                # if the model is unfitted, initialise the scaler here
                 self.scaler = MinMaxScaler(feature_range=(-np.pi / 2, np.pi / 2))
                 self.scaler.fit(X)
             X = self.scaler.transform(X)
 
         return X * self.scaling
+
+
+class IQPKernelClassifierSeparable(IQPKernelClassifier):
+    """IQP kernel ablation with the single-qubit IQP encoding intact and all ZZ terms removed."""
+
+    def _repeat_entangler_patterns(self, wires):
+        return tuple(tuple() for _ in range(self.repeats))
+
+
+class IQPKernelClassifierHalfSeparable(IQPKernelClassifier):
+    """IQP kernel ablation that keeps a seeded random 50% subset of ZZ edges per repeat."""
+
+    def _repeat_entangler_patterns(self, wires):
+        return _random_half_iqp_patterns(wires, self.repeats, self.random_state)
