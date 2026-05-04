@@ -2,7 +2,7 @@
 #SBATCH --job-name=ccc_bas_train_eval_32
 #SBATCH --account=thes2204
 #SBATCH --partition=c23mm
-#SBATCH --time=24:00:00
+#SBATCH --time=5-00:00:00
 #SBATCH --cpus-per-task=8
 #SBATCH --mem=96G
 #SBATCH --output=/home/fwm91820/qml_benchmarks/qml-benchmarks-main/thesis/runs/logs_thesis/%x-%A_%a.out
@@ -17,8 +17,9 @@ OUT_BASE="$ROOT/thesis/my_results/bars_and_stripes"
 LOG_DIR="$ROOT/thesis/runs/logs_thesis"
 TRAIN_GLOB='bars_and_stripes_*noise_train.csv'
 
-# The 32_x_32 bars-and-stripes tasks peaked at about 67G RSS on c23mm, so
-# this dedicated script reserves 96G to leave headroom for the full benchmark.
+# The 32_x_32 bars-and-stripes tasks have repeatedly timed out at 24h while
+# staying below 96G RSS on c23mm, so this script keeps the same memory request
+# and extends walltime to let the full grid finish.
 
 mkdir -p "$LOG_DIR" "$OUT_BASE"
 ulimit -n 4096 || true

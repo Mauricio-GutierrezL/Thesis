@@ -102,9 +102,9 @@ def gen_hyperplanes_diff(root: Path) -> None:
         save_xy(out / f"hyperplanes-10d-from{dim_hyperplanes}d-{n_hyperplanes}n_test.csv", x_test, y_test)
 
 
-def gen_two_curves_diff(root: Path) -> None:
+def gen_two_curves(root: Path) -> None:
     np.random.seed(3)
-    out = root / "two_curves_diff"
+    out = root / "two_curves"
     n_samples = 300
     noise = 0.01
 
@@ -116,6 +116,13 @@ def gen_two_curves_diff(root: Path) -> None:
 
         save_xy(out / f"two_curves-5degree-0.1offset-{n_features}d_train.csv", x_train, y_train)
         save_xy(out / f"two_curves-5degree-0.1offset-{n_features}d_test.csv", x_test, y_test)
+
+
+def gen_two_curves_diff(root: Path) -> None:
+    np.random.seed(3)
+    out = root / "two_curves_diff"
+    n_samples = 300
+    noise = 0.01
 
     n_features = 10
     for degree in range(2, 21):
@@ -177,6 +184,7 @@ GENERATORS = {
     "hidden_manifold_diff": gen_hidden_manifold_diff,
     "bars_and_stripes": gen_bars_and_stripes,
     "hyperplanes_diff": gen_hyperplanes_diff,
+    "two_curves": gen_two_curves,
     "two_curves_diff": gen_two_curves_diff,
     "mnist_pca": gen_mnist_pca,
     "mnist_pca-": gen_mnist_pca_small,

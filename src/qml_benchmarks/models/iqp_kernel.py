@@ -53,10 +53,10 @@ def _random_half_iqp_patterns(wires, n_repeats, random_state):
     return tuple(patterns)
 
 
-class IQPKernelClassifier(BaseEstimator, ClassifierMixin):
+class IQPKernelClassifier(ClassifierMixin, BaseEstimator):
     def __init__(
         self,
-        svm=SVC(kernel="precomputed", probability=True),
+        svm=SVC(kernel="precomputed", probability=False),
         repeats=2,
         C=1.0,
         jit=False,
@@ -237,6 +237,16 @@ class IQPKernelClassifier(BaseEstimator, ClassifierMixin):
         kernel_matrix = self.precompute_kernel(X, self.params_["x_train"])
         return self.svm.predict(kernel_matrix)
 
+    def decision_function(self, X):
+        """Return the signed distance to the separating hyperplane for data X."""
+
+        if "x_train" not in self.params_:
+            raise ValueError("Model cannot predict without fitting to data first.")
+
+        X = self.transform(X)
+        kernel_matrix = self.precompute_kernel(X, self.params_["x_train"])
+        return self.svm.decision_function(kernel_matrix)
+
     def predict_proba(self, X):
         """Predict label probabilities for data X.
         note that this may be inconsistent with predict; see the sklearn docummentation for details.
@@ -252,9 +262,17 @@ class IQPKernelClassifier(BaseEstimator, ClassifierMixin):
         if "x_train" not in self.params_:
             raise ValueError("Model cannot predict without fitting to data first.")
 
-        X = self.transform(X)
-        kernel_matrix = self.precompute_kernel(X, self.params_["x_train"])
-        return self.svm.predict_proba(kernel_matrix)
+        if getattr(self.svm, "probability", False):
+            X = self.transform(X)
+            kernel_matrix = self.precompute_kernel(X, self.params_["x_train"])
+            return self.svm.predict_proba(kernel_matrix)
+
+        decision = np.asarray(self.decision_function(X))
+        if decision.ndim == 0:
+            decision = decision.reshape(1)
+
+        prob_pos = 1.0 / (1.0 + np.exp(-decision))
+        return np.c_[1.0 - prob_pos, prob_pos]
 
     def transform(self, X, preprocess=True):
         """

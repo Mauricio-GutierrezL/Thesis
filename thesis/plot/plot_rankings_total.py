@@ -53,6 +53,10 @@ DATASETS = {
         "folder": "mnist_pca-",
         "stem_regex": r"mnist_3-5_(\d+)d-250",
     },
+    "two-curves": {
+        "folder": "two_curves",
+        "stem_regex": r"two_curves-5degree-0\.1offset-(\d+)d",
+    },
     "two-curves-diff": {
         "folder": "two_curves_diff",
         "stem_regex": r"two_curves-10d-(\d+)degree",

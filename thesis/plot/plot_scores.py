@@ -60,6 +60,11 @@ DATASETS = {
         "xlabel": "number of features",
         "stem_regex": r"mnist_3-5_(\d+)d-250",
     },
+    "TWO CURVES": {
+        "folder": "two_curves",
+        "xlabel": "number of features",
+        "stem_regex": r"two_curves-5degree-0\.1offset-(\d+)d",
+    },
     "TWO CURVES DIFF": {
         "folder": "two_curves_diff",
         "xlabel": "degree",
@@ -71,7 +76,29 @@ MODEL_ORDER = [
     "CircuitCentricClassifier",
     "CircuitCentricClassifierHalfSeparableRandom50",
     "CircuitCentricClassifierSeparable",
+    "IQPKernelClassifier",
+    "IQPKernelClassifierHalfSeparable",
+    "IQPKernelClassifierSeparable",
 ]
+
+FAMILY_FILTERS = {
+    "ccc": {
+        "models": [
+            "CircuitCentricClassifier",
+            "CircuitCentricClassifierHalfSeparableRandom50",
+            "CircuitCentricClassifierSeparable",
+        ],
+        "out_suffix": "-ccc",
+    },
+    "iqp": {
+        "models": [
+            "IQPKernelClassifier",
+            "IQPKernelClassifierHalfSeparable",
+            "IQPKernelClassifierSeparable",
+        ],
+        "out_suffix": "-iqp",
+    },
+}
 
 
 def load_plotting_config():
@@ -130,14 +157,19 @@ def parse_dataset_value(model_name: str, result_file: Path, dataset_cfg: dict):
     return dataset_stem, int(match.group(1))
 
 
-def collect_dataset_frame(dataset_cfg, plotting_config):
+def collect_dataset_frame(dataset_cfg, plotting_config, allowed_models=None):
     dataset_root = RESULTS_DIR / dataset_cfg["folder"]
     if not dataset_root.exists():
         return pd.DataFrame(), []
 
     model_dirs = sorted([p for p in dataset_root.iterdir() if p.is_dir()])
-    ordered_models = [m for m in MODEL_ORDER if (dataset_root / m).is_dir()]
-    ordered_models.extend([p.name for p in model_dirs if p.name not in ordered_models])
+    discovered_models = [p.name for p in model_dirs]
+
+    if allowed_models is None:
+        ordered_models = [m for m in MODEL_ORDER if (dataset_root / m).is_dir()]
+        ordered_models.extend([name for name in discovered_models if name not in ordered_models])
+    else:
+        ordered_models = [m for m in allowed_models if (dataset_root / m).is_dir()]
 
     frames = []
     for model_index, model_name in enumerate(ordered_models):
@@ -169,8 +201,8 @@ def collect_dataset_frame(dataset_cfg, plotting_config):
     return df, ordered_models
 
 
-def plot_dataset(dataset_name, dataset_cfg, plotting_config):
-    df, model_order = collect_dataset_frame(dataset_cfg, plotting_config)
+def plot_dataset(dataset_name, dataset_cfg, plotting_config, allowed_models=None, out_suffix=""):
+    df, model_order = collect_dataset_frame(dataset_cfg, plotting_config, allowed_models=allowed_models)
     if df.empty:
         print(f"No data found for {dataset_name}")
         return
@@ -246,13 +278,13 @@ def plot_dataset(dataset_name, dataset_cfg, plotting_config):
     out_name = dataset_cfg["folder"]
     plt.tight_layout(rect=[0, 0.12, 1, 1])
     plt.savefig(
-        FIGURES_DIR / f"score-{out_name}-qnn.png",
+        FIGURES_DIR / f"score-{out_name}{out_suffix}-qnn.png",
         dpi=200,
         bbox_inches="tight",
         bbox_extra_artists=(legend,),
     )
     plt.close(fig)
-    print(f"Saved {FIGURES_DIR / f'score-{out_name}-qnn.png'}")
+    print(f"Saved {FIGURES_DIR / f'score-{out_name}{out_suffix}-qnn.png'}")
 
 
 
@@ -260,6 +292,15 @@ def main():
     plotting_config = load_plotting_config()
     for dataset_name, dataset_cfg in DATASETS.items():
         plot_dataset(dataset_name, dataset_cfg, plotting_config)
+        if dataset_cfg["folder"] == "linearly_separable":
+            for family_cfg in FAMILY_FILTERS.values():
+                plot_dataset(
+                    dataset_name,
+                    dataset_cfg,
+                    plotting_config,
+                    allowed_models=family_cfg["models"],
+                    out_suffix=family_cfg["out_suffix"],
+                )
 
 
 if __name__ == "__main__":

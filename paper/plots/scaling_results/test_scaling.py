@@ -20,14 +20,14 @@ dataset_paths = [
     "../../benchmarks/mnist_pca",
     "../../benchmarks/linearly_separable",
     "../../benchmarks/hidden_manifold",
-    "../../benchmarks/two_curves_diff",
+    "../../benchmarks/two_curves",
 ]
 
 experiment_paths = [
     "../../results/mnist_pca",
     "../../results/linearly-separable",
     "../../results/hidden_manifold",
-    "../../results/two_curves_diff",
+    "../../results/two_curves",
 ]
 
 dataset_fnames = [

@@ -102,6 +102,13 @@ if __name__ == "__main__":
         "--n-jobs", type=int, default=-1, help="Number of parallel threads to run"
     )
 
+    parser.add_argument(
+        "--pre-dispatch",
+        type=str,
+        default=None,
+        help="GridSearchCV pre_dispatch setting. Defaults to n_jobs when n_jobs > 0.",
+    )
+
     # Parse the arguments along with any extra arguments that might be model specific
     args, unknown_args = parser.parse_known_args()
 
@@ -218,11 +225,16 @@ if __name__ == "__main__":
     scorer = args.hyperparameter_scoring if not is_generative else custom_scorer
     refit = args.hyperparameter_refit if not is_generative else False
 
+    pre_dispatch = args.pre_dispatch
+    if pre_dispatch is None and args.n_jobs > 0:
+        pre_dispatch = str(args.n_jobs)
+
     gs = GridSearchCV(estimator=model, param_grid=hyperparam_grid,
                       scoring=scorer,
                       refit=refit,
                       verbose=3,
-                      n_jobs=args.n_jobs).fit(
+                      n_jobs=args.n_jobs,
+                      pre_dispatch=pre_dispatch).fit(
         X, y
     )
     logging.info("Best hyperparams")

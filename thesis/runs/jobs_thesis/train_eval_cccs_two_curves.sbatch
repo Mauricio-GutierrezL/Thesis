@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-#SBATCH --job-name=ccc_tcd_train_eval
+#SBATCH --job-name=ccc_tc_train_eval
 #SBATCH --account=thes2204
 #SBATCH --partition=c23mm
 #SBATCH --time=24:00:00
@@ -12,10 +12,10 @@
 set -euo pipefail
 
 ROOT="/home/fwm91820/qml_benchmarks/qml-benchmarks-main"
-DATA_DIR="$ROOT/thesis/datasets_tests/two_curves_diff"
-OUT_BASE="$ROOT/thesis/my_results/two_curves_diff"
+DATA_DIR="$ROOT/thesis/datasets_tests/two_curves"
+OUT_BASE="$ROOT/thesis/my_results/two_curves"
 LOG_DIR="$ROOT/thesis/runs/logs_thesis"
-TRAIN_GLOB='two_curves-10d-*degree_train.csv'
+TRAIN_GLOB='two_curves-5degree-0.1offset-*d_train.csv'
 
 mkdir -p "$LOG_DIR" "$OUT_BASE"
 ulimit -n 4096 || true

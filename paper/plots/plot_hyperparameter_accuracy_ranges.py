@@ -56,7 +56,7 @@ datasets = {
         "manifold_GridSearchCV-best-hyperparams-results.csv",
     ],
     "TWO CURVES": [
-        "../results/two_curves_diff",
+        "../results/two_curves",
         "two_curves-5degree-0.1offset-",
         "d_GridSearchCV-best-hyperparams-results.csv",
     ],

@@ -23,6 +23,7 @@ import sys
 import os
 import argparse
 import logging
+import inspect
 import pandas as pd
 logging.getLogger().setLevel(logging.INFO)
 from importlib import import_module
@@ -39,6 +40,31 @@ def canonical_dataset_stem(dataset_path):
     if stem.endswith("_test"):
         return stem[:-5]
     return stem
+
+
+def coerce_hyperparams_for_classifier(classifier_cls, hyperparams):
+    """Cast CSV-loaded hyperparameters back to the estimator constructor types."""
+
+    coerced = dict(hyperparams)
+    signature = inspect.signature(classifier_cls.__init__)
+
+    for name, value in list(coerced.items()):
+        param = signature.parameters.get(name)
+        if param is None or param.default is inspect._empty:
+            continue
+
+        default = param.default
+        if isinstance(default, bool):
+            if isinstance(value, str):
+                coerced[name] = value.lower() in {"1", "true", "yes"}
+            else:
+                coerced[name] = bool(value)
+        elif isinstance(default, int) and not isinstance(default, bool):
+            coerced[name] = int(value)
+        elif isinstance(default, float):
+            coerced[name] = float(value)
+
+    return coerced
 
 logging.info('cpu count:' + str(os.cpu_count()))
 
@@ -144,7 +170,10 @@ if __name__ == "__main__":
             logging.warning("Cleaning existing results for ", path_out)
 
     # Load best hyperparameters
-    best_hyperparams = csv_to_dict(args.hyperparams_path)
+    best_hyperparams = coerce_hyperparams_for_classifier(
+        Classifier,
+        csv_to_dict(args.hyperparams_path),
+    )
 
     # Score the model
     results_with_best_hyperparams = {"train_acc": [], "test_acc": []}

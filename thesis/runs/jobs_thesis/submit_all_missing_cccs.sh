@@ -11,6 +11,7 @@ jobs=(
   "thesis/runs/jobs_thesis/train_eval_cccs_hyperplanes_diff.sbatch"
   "thesis/runs/jobs_thesis/train_eval_cccs_mnist_pca.sbatch"
   "thesis/runs/jobs_thesis/train_eval_cccs_mnist_pca_small.sbatch"
+  "thesis/runs/jobs_thesis/train_eval_cccs_two_curves.sbatch"
   "thesis/runs/jobs_thesis/train_eval_cccs_two_curves_diff.sbatch"
 )
 

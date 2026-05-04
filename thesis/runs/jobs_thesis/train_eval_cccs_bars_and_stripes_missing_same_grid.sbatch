@@ -1,21 +1,21 @@
 #!/usr/bin/env bash
-#SBATCH --job-name=ccc_tcd_train_eval
+#SBATCH --job-name=ccc_bas_missing
 #SBATCH --account=thes2204
 #SBATCH --partition=c23mm
-#SBATCH --time=24:00:00
-#SBATCH --cpus-per-task=8
-#SBATCH --mem-per-cpu=4G
+#SBATCH --time=5-00:00:00
+#SBATCH --cpus-per-task=4
+#SBATCH --mem=128G
 #SBATCH --output=/home/fwm91820/qml_benchmarks/qml-benchmarks-main/thesis/runs/logs_thesis/%x-%A_%a.out
 #SBATCH --error=/home/fwm91820/qml_benchmarks/qml-benchmarks-main/thesis/runs/logs_thesis/%x-%A_%a.err
-#SBATCH --array=0-56%4
+#SBATCH --array=1,2,5,6,9,10%2
 
 set -euo pipefail
 
 ROOT="/home/fwm91820/qml_benchmarks/qml-benchmarks-main"
-DATA_DIR="$ROOT/thesis/datasets_tests/two_curves_diff"
-OUT_BASE="$ROOT/thesis/my_results/two_curves_diff"
+DATA_DIR="$ROOT/thesis/datasets_tests/bars_and_stripes"
+OUT_BASE="$ROOT/thesis/my_results/bars_and_stripes"
 LOG_DIR="$ROOT/thesis/runs/logs_thesis"
-TRAIN_GLOB='two_curves-10d-*degree_train.csv'
+TRAIN_GLOB='bars_and_stripes_*noise_train.csv'
 
 mkdir -p "$LOG_DIR" "$OUT_BASE"
 ulimit -n 4096 || true
@@ -68,6 +68,11 @@ TEST="${TRAIN/_train.csv/_test.csv}"
 DATASET_NAME="$(basename "$TRAIN" .csv)"
 DATASET_NAME="${DATASET_NAME%_train}"
 
+if [[ "$DATASET_NAME" != *"8_x_8"* && "$DATASET_NAME" != *"16_x_16"* ]]; then
+  echo "ERROR: this script is restricted to 8_x_8 and 16_x_16 bars-and-stripes datasets"
+  exit 6
+fi
+
 OUT_DIR="$OUT_BASE/$MODEL_LABEL"
 RESULTS_DIR="$OUT_DIR/results"
 mkdir -p "$RESULTS_DIR"
@@ -100,12 +105,12 @@ echo "TEST=$TEST"
 echo "OUT_DIR=$OUT_DIR"
 python -V
 
-HPS_N_JOBS=2
-SCORE_N_JOBS=2
-
-if [[ "$MODEL_LABEL" != "CircuitCentricClassifierHalfSeparableRandom50" ]]; then
+if [[ "$DATASET_NAME" == *"8_x_8"* ]]; then
+  HPS_N_JOBS=2
+  SCORE_N_JOBS=1
+else
   HPS_N_JOBS=4
-  SCORE_N_JOBS=4
+  SCORE_N_JOBS=1
 fi
 
 echo "HPS_N_JOBS=$HPS_N_JOBS"
@@ -122,6 +127,7 @@ if [[ ! -f "$FINAL_HPS" ]]; then
     --dataset-path "$TRAIN" \
     --results-path "$OUT_DIR" \
     --n-jobs "$HPS_N_JOBS" \
+    --pre-dispatch "$HPS_N_JOBS" \
     --clean False \
     --hyperparameter-scoring accuracy roc_auc \
     --hyperparameter-refit accuracy
