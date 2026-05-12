@@ -60,6 +60,17 @@ metadata.
 - `CircuitCentricClassifierSeparable`
   Controlled ansatz with no entangling gates in the variational part.
 
+### Current IQP Variants
+
+- `IQPKernelClassifier`
+  Original IQP-kernel classifier with the full IQP-style ZZ entangler pattern in every repeat.
+
+- `IQPKernelClassifierHalfSeparable`
+  IQP-kernel variant that keeps the same single-qubit encoding but uses a seeded random 50% subset of ZZ entangling edges in each repeat.
+
+- `IQPKernelClassifierSeparable`
+  IQP-kernel variant with the same single-qubit encoding and no ZZ entangling gates.
+
 ### Naming Conventions
 
 - Training datasets:
