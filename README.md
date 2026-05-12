@@ -1,4 +1,4 @@
-# Benchmarking for quantum machine learning models
+# Quantifying the Effect of Quantum Operations in Machine Learning by Comparison to Classically Simulable Variants
 
 This repository contains tools to compare the performance of near-term quantum machine learning (QML)
 as well as standard classical machine learning models on supervised and generative learning tasks. 
