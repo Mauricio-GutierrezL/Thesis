@@ -40,7 +40,7 @@
 \let\cleardoublepage\clearpage
 
 % Title and author information
-\title{Quantifying quantumness: Determining the effect of quantum operations in machine learning models by comparison to classically simulatable variants}
+\title{Quantifying the Effect of Quantum Operations in Machine Learning by Comparison to Classically Simulable Variants}
 \author{Víctor Mauricio Gutiérrez Luque\thanks{Computations were performed with computing resources granted by RWTH Aachen University under project \texttt{thes2204}.}}
 \date{12.05.2026}
 \begin{document}
@@ -59,9 +59,7 @@ Quantum machine learning (QML) investigates whether quantum-mechanical represent
 \tableofcontents
 
 % Chapters
-\chapter{Introduction}
-
-\section{Introduction and Related Literature}
+\chapter{Introduction and Related Literature}
 
 Quantum machine learning sits at the intersection of quantum computing and statistical learning, and much of the literature has been motivated by the possibility that quantum models may represent or process patterns in ways that are classically difficult to reproduce. Foundational work on quantum feature maps, variational quantum circuits, and quantum kernels established the main model classes now used in the field \parencite{mitarai2018quantum,schuld2019evaluating,havlicek2019supervised,benedetti2019parameterized}. At the same time, more recent critical work has emphasized that the central scientific question is not simply whether a quantum model can outperform a classical baseline on a particular benchmark, but whether the observed behavior can actually be attributed to specifically quantum ingredients rather than to tuning choices, data selection, or architectural details that could also be reproduced classically \parencite{bowles2024better}.
 
@@ -74,7 +72,7 @@ The remainder of the document is structured as follows. Chapter~2 develops the b
 
 \section{Quantum Computing Preliminaries}
 
-\subsection{Behind Quantum Computing}
+\subsection{Historical Background}
 In the last century, there were measured results in classical physics giving absurdities. Initially, when people studied how hot objects glowed, the old theory predicted they should emit infinite amounts of UV light. Planck resolved this problem by proposing that energy is not exchanged continuously, but in discrete packets called quanta \parencite{planck_1900_blackbody}. Subsequently, the photoelectric effect showed that light can knock electrons out of metal only if its frequency is high enough; brightness or intensity of light alone did not help. Einstein explained this phenomenon by saying light behaves like particles (photons), each carrying one energy packet \parencite{einstein_1905_photoelectric}. A further development was Bohr's contribution. Atoms when heated were seen to emit only specific wavelengths or colors (spectral lines) and not a smooth rainbow. This made sense if electrons inside atoms can only have certain allowed energies. Bohr applied the quantum idea to atoms, proposing quantized energy levels for electrons in 1913, but without explaining why \parencite{bohr_1913_atom}. Consequently, De Broglie suggested that not only light, but also matter like electrons can act like waves; electron-diffraction experiments confirmed this \parencite{debroglie_1924_thesis}.
 
 Heisenberg and Schr{\"o}dinger completed it by independently constructing new, self-consistent replacements for classical mechanics. Heisenberg started from the experimental fact that atomic spectra reveal only transitions between discrete energy levels. This led naturally to a matrix-based algebra in which the order of operations matters, capturing quantum behavior without relying on classical orbits. Schr{\"o}dinger, in contrast, searched for a wave equation governing microscopic systems of matter. This yielded correct bound-state energies and spectral predictions. They were soon shown to be mathematically equivalent descriptions of the same theory, and Born provided the probabilistic interpretation of the wavefunction \parencite{heisenberg_1925_matrix_mechanics,schrodinger_1926_wave_mechanics,born_1926_born_rule}. In short: classical physics failed for small-scale phenomena, and quantum mechanics was the new rulebook that fit the experiments.
@@ -336,6 +334,7 @@ The model predicts labels using the \textit{sign function}: $f(\mathbf{x}) = \te
 
 
 \subsection{Kernel Methods }
+\label{subsec:kernel-methods}
 Kernel methods \parencite{scholkopf2002learning} are a set of techniques that allow linear models to learn non-linear patterns by computing similarities between data points using a \textit{kernel function}. A kernel is a function $K(\mathbf{x}, \mathbf{x}')$ that measures how similar two inputs are, without explicitly mapping them into a higher-dimensional space. Instead, it leverages the mathematical property that inner products in this high-dimensional space can be computed directly via the kernel, a concept known as the \textit{kernel trick}.
 
 One widely used kernel is the Gaussian kernel or RBF(Radial Basis Function):
@@ -356,17 +355,11 @@ where $\mathbf{W}^{(l)}$ and $\mathbf{b}^{(l)}$ are the weights and biases of la
 
 Small MLPs, typically with one or two hidden layers and a moderate number of units, are capable of learning complex, non-linear relationships while maintaining tractability. Unlike kernel methods or instance-based models, MLPs \textit{learn internal representations} of the data during training, which makes them a flexible and general-purpose modeling approach.
 
-\paragraph{Convolutional Neural Networks (CNNs).}
-For image-like data, a common variant of neural networks is the convolutional neural network (CNN). 
-Instead of fully connecting every input pixel to every neuron in the first layer, CNNs use \emph{convolutional layers}, which apply small learnable filters locally across the input. 
-The same filter is reused at all spatial positions, so the network can detect the same pattern (edges, lines or corners) regardless of where it appears in the image. 
-Convolutional layers are typically followed by non-linear activation functions and \emph{pooling} operations that downsample the feature maps, gradually reducing spatial resolution while increasing the level of abstraction. 
-In the final stages, one or more fully connected layers map these extracted features to class scores, making CNNs particularly effective for image classification tasks.
-
 
 \section{Quantum Machine Learning}
+\label{sec:qml}
 
-\subsection{How data is encoded?}
+\subsection{How is data encoded?}
 
 Classical data can be embedded into quantum states in several ways; here we briefly
 summarise a few common schemes following \textcite{rath2023quantum}.
@@ -432,7 +425,7 @@ can represent \parencite{benedetti2019parameterized}.
 
 \subsection{Models in Quantum Machine Learning}
 Following the models introduced in \parencite{bowles2024better}, we now discuss the following:
-\subsubsection{VQC's: Variational Quantum Circuits}
+\subsubsection{VQCs: Variational Quantum Circuits}
 
 In the setting of quantum machine learning, variational quantum circuits or VQC's are often
 described abstractly as functions of the form
@@ -503,15 +496,7 @@ similarities computed by a quantum circuit. In this way, the “model” remains
 classical kernel method, while the quantum computer is used only to realise a
 potentially rich feature space that may be hard to simulate classically.
 
-
-
-
-
-
 \section{Motivation: The Benchmarking Problem in QML}
-
-\subsection{The benchmarking problem in quantum machine learning}
-\label{subsec:benchmarking-qml}
 
 Before large, fault-tolerant quantum computers are available, almost all empirical evidence about quantum machine learning (QML) comes from classical simulations of small quantum models or from experiments on noisy, few-qubit devices. In this regime, \emph{benchmarking}, systematically comparing quantum models against each other and against classical baselines on common tasks, is one of the few tools available to assess whether current ideas in QML actually deliver on their promised advantages, as discussed in \textcite{bowles2024better}. 
 
@@ -543,7 +528,7 @@ The conclusion is that broad questions of the form ``Are quantum models better t
 
 Carefully designed benchmarks must therefore emphasise controlled variation, reproducibility, and ablation-style comparisons over simple leaderboard rankings.
 
-\paragraph{What matters in a comparison?}
+\paragraph*{What matters in a comparison?}
 
 Given these challenges, \textcite{bowles2024better} argue that benchmarking should move beyond simplistic leaderboard questions and instead ask \emph{structural} questions about model design. Rather than only asking whether a quantum model outperforms a classical baseline, we should try to understand \emph{which parts} of the model are crucial and which can be replaced by classically simulable components without loss of performance. In other words, benchmarking should be used as an \emph{ablation tool} to probe the role of quantum resources.
 
@@ -576,6 +561,8 @@ The practical motivation for this setup is straightforward: if the original mode
 
 This thesis uses the same benchmark family as the reference study of \textcite{bowles2024better}. The intention is therefore not to introduce new datasets, but to reuse the same controlled tasks so that the effect of dequantization can be studied in a setting that is already established in the literature.
 
+\input{figures/benchmark_examples_snippet}
+
 The benchmark suite contains several dataset families, each designed to probe a different aspect of model behavior. Each benchmark vary either the input dimension, the intrinsic structure of the data, or the geometric complexity of the decision boundary. This makes it possible to ask more specific questions than whether a model performs well on average.
 
 At one end of the spectrum, the \textbf{linearly separable} benchmark serves as the simplest sanity-check task in the suite. The two classes are separated by a single hyperplane, so a basic linear classifier should already solve the problem. Its main role is therefore to test whether a model can recover a simple linear decision rule as the input dimension changes.
@@ -593,8 +580,7 @@ The original benchmark suite of Bowles et al.~\parencite{bowles2024better} also 
 Taken together, these dataset families provide a controlled progression from simple linear tasks to problems with hidden low-dimensional structure, curved decision geometry, and compositional parity rules. It allows the role of entanglement to be studied across qualitatively different learning scenarios, rather than being inferred from a single benchmark alone.
 
 \section{Circuit-Centric Classifier}
-
-The first quantum model family studied in this thesis is the Circuit-Centric Classifier (CCC), following the architecture proposed by \textcite{schuld2018circuit}. It follows the general ideas of data embedding, variational ans\"atze, and measurement-based predictions, which were introduced in the previous chapter.
+The first quantum model family studied in this thesis is the Circuit-Centric Classifier (CCC), following the architecture proposed by \textcite{schuld2018circuit}. Conceptually, CCC belongs to the variational, or quantum-neural-network, branch of QML discussed in Section~\ref{sec:qml}. As such, it consists of trainable parameters arranged in layers and optimized from data to produce a classification score. However, instead of applying affine transformations and classical activation functions, CCC uses a parametrized quantum circuit acting on an encoded quantum state. In this sense, it follows the general framework of data embedding, variational ans\"atze, and measurement-based prediction introduced in the previous chapter.
 
 \subsection{Input Encoding}
 
@@ -630,7 +616,7 @@ the interval \([-1,1]\), to which a trainable bias term \(b\) is added to obtain
 the final score. 
 The prediction rule is kept fixed across all CCC variants and the only systematic modification concerns the internal entangling structure of the variational circuit.
 
-\section{Dequantized CCC Variants}
+\section{Entanglement Ablation}
 
 We consider controlled modifications of CCC designed to reduce or remove entanglement while preserving the rest of the architecture as far as possible. This follows the ablation perspective advocated by \textcite{bowles2024better}.
 
@@ -691,18 +677,19 @@ Operationally, $\alpha$ controls how much entangling structure is available to t
 \end{figure}
 
 
-\subsection{Separable and Half-Separable Variants}
+\subsection{CCC Variants}
 
-Two dequantized variants are considered in this work.
+Two dequantized variants are considered in this work, namely, \emph{CircuitCentricClassifierHalfSeparable} and \emph{CircuitCentricClassifierSeparable}.
 
-The first is the \emph{separable} CCC. Here the entanglement-control parameter is set to $\alpha = 0$. As a result, no two-qubit gates are applied anywhere in the variational block. The circuit therefore remains fully local, and this constitutes the strongest dequantization step considered.
+In the separable version, the entanglement-control parameter is set to $\alpha = 0$. As a result, no two-qubit gates are applied anywhere in the variational block. The circuit therefore remains fully local, and this constitutes the strongest dequantization step considered.
 
-The second is the \emph{half-separable} CCC. Here the entanglement-control parameter is set to $\alpha = 0.5$, so that approximately half of the candidate two-qubit couplings in each layer remain active. This model occupies an intermediate position between the original entangling CCC and the fully separable version. It is methodologically useful because it allows us to test whether performance degrades gradually as entanglement is reduced, or whether most of the observed behavior can already be reproduced with only limited entangling structure. It uses a seeded random 50\% subset instead, which preserves reproducibility while avoiding this ordering bias.
+The \emph{half-separable} has the entanglement-control parameter set to $\alpha = 0.5$, so that approximately half of the candidate two-qubit couplings in each layer remain active. This model occupies an intermediate position between the original entangling CCC and the fully separable version. It is methodologically useful because it allows us to test whether performance degrades gradually as entanglement is reduced, or whether most of the observed behavior can already be reproduced with only limited entangling structure. It uses a seeded random 50\% subset instead, which preserves reproducibility.
 
 The implementation of this controlled ansatz is shown in
 Listing~\ref{lst:controlled-ansatz-relevant}, which is a modified version from \ref{lst:strongly-entangling-relevant}.
 \begin{lstlisting}[
     style=pythonstyle,
+    basicstyle=\ttfamily\scriptsize,
     caption={Relevant logic of PennyLane's \texttt{StronglyEntanglingLayers} template~\parencite{pennylane_strongly_entangling_layers}.},
     label={lst:strongly-entangling-relevant}
 ]
@@ -733,6 +720,7 @@ for l in range(n_layers):
 
 \begin{lstlisting}[
     style=pythonstyle,
+    basicstyle=\ttfamily\scriptsize,
     caption={Relevant controlled-ansatz logic implemented in \texttt{src/qml\_benchmarks/models/circuit\_centric.py}.},
     label={lst:controlled-ansatz-relevant}
 ]
@@ -806,28 +794,105 @@ class Separable(CircuitCentricClassifier):
 
 \section{IQP Kernel Classifier}
 
-The second quantum model family studied in this thesis is the IQP kernel classifier, based on the \texttt{IQPKernelClassifier} already present in the benchmark codebase. This family is included so that the entanglement-ablation question can be asked not only for a variational classifier, but also for a quantum-kernel model.
+The second quantum model family is the IQP kernel classifier from \textcite{havlicek2019supervised}, implemented here through the \texttt{IQPKernelClassifier} already present in the benchmark codebase. This family is included so that the entanglement-ablation question can be asked not only for a variational classifier, but also for a quantum-kernel model. In contrast to CCC, the IQP kernel model does not learn circuit parameters directly. Instead, it replaces the classical similarity function used in kernel methods, discussed in Section~\ref{subsec:kernel-methods}, by one induced through a quantum feature map.
 
-The IQP kernel model differs conceptually from CCC in an important way. CCC is a variational classifier with trainable circuit parameters and a measurement-based prediction rule. By contrast, the IQP-kernel model uses a fixed feature map to define a kernel
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.70\linewidth]{figures/iqp.png}
+    \caption{Example of an IQP embedding circuit with three input features and two repeated embedding blocks. Adapted from PennyLane~\parencite{pennylane_iqp_embedding}.} 
+    \label{fig:iqp-embedding}
+\end{figure}
+
+The feature map follows the logic of PennyLane's \texttt{qml.IQPEmbedding} template \parencite{pennylane_iqp_embedding}. In each repeat, the template applies a layer of Hadamard gates and single-qubit \(R_Z\) rotations that encode the individual features, followed by ZZ interactions that encode pairwise feature products. The resulting circuit defines a kernel of the form
 \[
     k(x,x') = |\langle 0|U(x')^{\dagger}U(x)|0\rangle|^2,
 \]
-which is then passed to a classical support-vector machine with a precomputed kernel matrix. In other words, the quantum circuit defines the feature space, while the final classifier is a classical SVM.
+which is then passed to a classical support-vector machine with a precomputed kernel matrix. In other words, the quantum circuit defines the feature space, while the final classifier remains a classical SVM.
 
-In the implementation used here, the single-qubit part of the IQP feature map is kept fixed across all variants, and only the ZZ entangling pattern is changed. The hyperparameter interface is also kept aligned across variants, in particular the number of IQP repeats and the SVM regularisation parameter.
+\section{Entanglement Ablation}
+For the IQP family, the ablation modifies the entangling structure inside this embedding while keeping the single-qubit encoding fixed. More specifically, all variants retain the same Hadamard and \(R_Z\) feature-encoding layers, and differ only in the ZZ entangler pattern. This is the natural quantity to vary because PennyLane's \texttt{qml.IQPEmbedding} already allows the entangling wire pairs to be controlled through its \texttt{pattern} argument \parencite{pennylane_iqp_embedding}. The hyperparameter interface is also kept aligned across variants, in particular with respect to the number of IQP repeats and the SVM regularisation parameter.
 
 \subsection{IQP Kernel Variants}
 
-Three IQP-kernel variants are considered.
+The first variant is the original \texttt{IQPKernelClassifier}, which uses the full IQP-style entangler pattern in every repeat of the embedding.
 
-The first is the original \texttt{IQPKernelClassifier}, which uses the standard IQP-style feature map with all ZZ couplings present in each repeat of the embedding.
+The second is \texttt{IQPKernelClassifierSeparable}. This variant keeps the same single-qubit IQP encoding but removes all ZZ couplings. It is therefore the direct no-entanglement ablation of the IQP embedding.
 
-The second is \texttt{IQPKernelClassifierSeparable}. This variant keeps the same single-qubit IQP encoding but removes all ZZ couplings. It is therefore the direct no-entanglement ablation for the IQP feature map.
+The third is \texttt{IQPKernelClassifierHalfSeparable}. This variant again keeps the same single-qubit IQP encoding, but in each repeat retains only a seeded random 50\% subset of the full ZZ edge set. As in the CCC case, the intention is to test whether performance degrades gradually as entangler density is reduced, or whether much of the kernel's behavior can already be recovered with a sparse entangling pattern.
 
-The third is \texttt{IQPKernelClassifierHalfSeparable}. This variant again keeps the same single-qubit IQP encoding, but for each repeat it retains only a seeded random 50\% subset of the full ZZ edge set. As in the CCC case, the intention is to test whether reducing entangler density causes a gradual loss relative to the full model, or whether much of the kernel's behavior can already be recovered with a sparse entangling pattern.
+These IQP-kernel variants are methodologically useful because they allow the entanglement question to be posed in a different QML model class. In CCC, entanglement appears inside a trainable variational ansatz. In the IQP-kernel model, the entangling ZZ structure is part of the fixed feature map itself. Comparing both families therefore helps separate claims about entanglement in a particular ansatz from claims about entanglement in a broader QML pipeline.
 
-These IQP-kernel variants are methodologically useful because they allow the entanglement question to be posed in a different QML model class. In CCC, entanglement appears inside a trainable variational ansatz. In the IQP-kernel model, by contrast, the entangling ZZ structure is part of the fixed feature map itself. Comparing both families therefore helps separate claims about entanglement in a particular ansatz from claims about entanglement in a broader QML pipeline.
+Listing~\ref{lst:iqp-embedding-ours-relevant} gives the corresponding implementation in \texttt{src/qml\_benchmarks/models/iqp\_kernel.py}. It uses the relevant logic of PennyLane's \texttt{qml.IQPEmbedding} template~\parencite{pennylane_iqp_embedding} in \texttt{\_apply\_iqp\_embedding}. Listing~\ref{lst:iqp-embedding-variants-relevant} then shows the variant-specific pattern overrides.
 
+\begin{lstlisting}[
+    style=pythonstyle,
+    basicstyle=\ttfamily\scriptsize,
+    caption={Relevant IQP-kernel logic implemented in \texttt{src/qml\_benchmarks/models/iqp\_kernel.py}.},
+    label={lst:iqp-embedding-ours-relevant}
+]
+def _full_iqp_entangler_pattern(wires):
+    # Full pairwise ZZ entangler pattern
+    return tuple(combinations(wires, 2))
+
+
+class IQPKernelClassifier(ClassifierMixin, BaseEstimator):
+    def _repeat_entangler_patterns(self, wires):
+        # Use the same full pattern in every repeat
+        full_pattern = _full_iqp_entangler_pattern(wires)
+        return tuple(full_pattern for _ in range(self.repeats))
+
+    def _apply_iqp_embedding(self, features, wires, repeat_patterns):
+        for pattern in repeat_patterns:
+            # As in qml.IQPEmbedding: Hadamards and RZ feature encoding
+            for idx, wire in enumerate(wires):
+                qml.Hadamard(wires=wire)
+                qml.RZ(features[idx], wires=wire)
+
+            # As in qml.IQPEmbedding: ZZ entanglers on the chosen pattern
+            for wire_pair in pattern:
+                idx_a = wires.index(wire_pair[0])
+                idx_b = wires.index(wire_pair[1])
+                angle = features[idx_a] * features[idx_b]
+                qml.MultiRZ(angle, wires=wire_pair)
+\end{lstlisting}
+\begin{lstlisting}[
+    style=pythonstyle,
+    basicstyle=\ttfamily\scriptsize,
+    caption={Variant-specific entangler-pattern logic for the separable and half-separable IQP-kernel classifiers.},
+    label={lst:iqp-embedding-variants-relevant}
+]
+def _random_half_iqp_patterns(wires, n_repeats, random_state):
+    full_pattern = _full_iqp_entangler_pattern(wires)
+
+    if len(full_pattern) <= 1:
+        return tuple(tuple(full_pattern) for _ in range(n_repeats))
+
+    # Keep about half of the full ZZ edge set in each repeat
+    target_n_edges = max(1, len(full_pattern) // 2)
+    patterns = []
+
+    for repeat in range(n_repeats):
+        rng = np.random.default_rng(random_state + 1000 * repeat)
+        idx = rng.choice(len(full_pattern), target_n_edges, replace=False)
+        idx = np.sort(idx)
+        patterns.append(tuple(full_pattern[i] for i in idx))
+
+    return tuple(patterns)
+
+
+class IQPKernelClassifierSeparable(IQPKernelClassifier):
+    def _repeat_entangler_patterns(self, wires):
+        # Remove all ZZ couplings in every repeat
+        return tuple(tuple() for _ in range(self.repeats))
+
+
+class IQPKernelClassifierHalfSeparable(IQPKernelClassifier):
+    def _repeat_entangler_patterns(self, wires):
+        # Keep a seeded random 50% subset of the full pattern
+        return _random_half_iqp_patterns(
+            wires, self.repeats, self.random_state
+        )
+\end{lstlisting}
 \section{Training Procedure}
 
 All model variants are trained within the same benchmark pipeline. This includes the same dataset generation, the same train-test protocol, the same hyperparameter-search infrastructure, and the same result logging format. The purpose of this uniform setup is to ensure that the comparison between CCC and its dequantized variants is an ablation study of model structure rather than a comparison between different experimental conditions.
@@ -837,18 +902,18 @@ For CCC, the implementations are trained as binary classifiers with labels in $\
 For the IQP-kernel family, the training flow is different but the benchmarking philosophy is the same. The quantum circuit is used to construct kernel matrices, and classification is then performed by a classical SVM backend. The main hyperparameters are the number of IQP repeats and the SVM regularisation parameter.
 \section{Evaluation}
 
-Model performance is evaluated primarily through test accuracy on the benchmark tasks. The central object of interest is the relative ranking of the original and dequantized CCC variants across datasets and benchmark settings. The experiments therefore examine not only absolute scores, but also whether removing entanglement changes the ordering of models across tasks of different difficulty.
+Model performance is evaluated primarily through test accuracy on the benchmark tasks. The central object of interest is the relative ranking of the original and dequantized CCC variants and IQP Kernel variants across datasets and benchmark settings. The experiments therefore examine not only absolute scores, but also whether removing entanglement changes the ranking of models across tasks of different difficulty.
 
 All reported results come from the benchmark framework described in this chapter. Train accuracy is used only as a secondary diagnostic to assess whether changes in test performance are associated with changes in fitting capacity or with possible overfitting.
 
 \section{Reproducibility}
-All experiments were conducted within a modified benchmark setup based on the \texttt{qml\_benchmarks} repository. The exact codebase used in this thesis is available at \url{https://github.com/Mauricio-GutierrezL/Thesis}. This repository provided the common experimental pipeline for dataset handling, model training, hyperparameter selection, and final evaluation. The overall benchmarking methodology follows the framework discussed by \citet{bowles2024better}. The computational environment was based on Python 3.9.21 and used PennyLane 0.38.0 together with JAX, with 64-bit precision enabled via \path{jax.config.update("jax_enable_x64", True)}. Additional core dependencies included scikit-learn, NumPy, and matplotlib. The modified implementations of the Circuit-Centric Classifier variants introduced in this thesis are located in \path{src/qml_benchmarks/models/circuit_centric.py}. Benchmark datasets were stored under \path{thesis/datasets_tests/}, while experiment outputs and aggregated results were written to \path{thesis/my_results/}.
+All experiments were conducted within a modified benchmark setup based on the \texttt{qml\_benchmarks} repository. The exact codebase used in this thesis is available at \url{https://github.com/Mauricio-GutierrezL/Thesis}. This repository provided the common experimental pipeline for dataset handling, model training, hyperparameter selection, and final evaluation. The overall benchmarking methodology follows the framework discussed by \citet{bowles2024better}. The computational environment was based on Python 3.9.21 and used PennyLane 0.38.0 together with JAX, with 64-bit precision enabled via \path{jax.config.update("jax_enable_x64", True)}. Additional core dependencies included scikit-learn, NumPy, and matplotlib. The modified implementations of the Circuit-Centric Classifier variants introduced in this thesis are located in \path{src/qml_benchmarks/models/circuit_centric.py}, while the IQP-kernel variants are implemented in \path{src/qml_benchmarks/models/iqp_kernel.py}. Benchmark datasets were stored under \path{thesis/datasets_tests/}, while experiment outputs and aggregated results were written to \path{thesis/my_results/}.
 
 All runs were executed on the RWTH Aachen CLAIX HPC cluster using CPU-only jobs scheduled through Slurm. Hyperparameter optimization was performed with \texttt{GridSearchCV} using five-fold cross-validation, and the same train/test evaluation pipeline was applied uniformly across all compared models in order to ensure methodological consistency.
 
 Benchmark datasets were generated with the utility script \path{thesis/generate_paper_benchmarks.py}, built on top of the data-generation functions in \path{src/qml_benchmarks/data/}. The benchmark-specific parameter choices in this script follow the original benchmark-generation setup from \path{paper/benchmarks/}. Dataset generation used fixed seeds per benchmark family, including \texttt{42} for linearly separable and MNIST-PCA data, \texttt{3} for hidden-manifold and two-curves families, and \texttt{1} for hyperplanes diff.
 
-Model-level randomness was controlled through the classifier parameter \texttt{random\_state}. In the controlled ansatz, this parameter determines the seeded pseudorandom selection of active entangling edges, ensuring reproducibility of the selected edge subsets. During final scoring, each selected model was evaluated over five runs with \texttt{random\_state} values \(0,\dots,4\). In addition, the execution scripts \path{scripts/run_hyperparameter_search.py} and \path{scripts/score_with_best_hyperparameters.py} set \texttt{np.random.seed(42)} globally in order to make script-level NumPy randomness reproducible.
+Model-level randomness was controlled through the classifier parameter \texttt{random\_state}. In the controlled CCC ansatz, this parameter determines the seeded pseudorandom selection of active entangling edges, ensuring reproducibility of the selected edge subsets. In the IQP-kernel family, \texttt{random\_state} initializes the model RNG, from which JAX PRNG keys and the SVM backend's random seed are derived. For \texttt{IQPKernelClassifierHalfSeparable}, it also determines the seeded random 50\% subset of ZZ entangling edges selected in each IQP repeat through \texttt{\_random\_half\_iqp\_patterns}. During final scoring, each selected model was evaluated over five runs with \texttt{random\_state} values \(0,\dots,4\). In addition, the execution scripts \path{scripts/run_hyperparameter_search.py} and \path{scripts/score_with_best_hyperparameters.py} set \texttt{np.random.seed(42)} globally in order to make script-level NumPy randomness reproducible.
 \chapter{Results}
 
 \section{Quantitative Results}
@@ -864,7 +929,7 @@ The original entangling CCC is the strongest model overall. It achieves the best
     \label{fig:ccc-ranking-all}
 \end{figure}
 
-Relative to the original CCC, the half-separable variant shows only a small mean loss in test accuracy across the completed benchmark set, about \(-0.0116\). By contrast, the fully separable model is markedly worse, with a mean test-accuracy difference of about \(-0.1705\) relative to the original CCC. This can be seen in Figure~\ref{fig:ccc-forest-diffs}. The difference between the half-separable and fully separable variants is then correspondingly large, about \(+0.1590\) in favor of the half-separable model. The main empirical pattern is therefore not that every reduction of entanglement is equally harmful, but that removing entanglement entirely is much more damaging than thinning it out.
+Relative to the original CCC, the half-separable variant shows only a small mean loss in test accuracy across the completed benchmark set, about \(-0.0116\). By contrast, the fully separable model is markedly worse, with a mean test-accuracy difference of about \(-0.1705\) relative to the original CCC. This can be seen in the first row of Figure~\ref{fig:ccc-forest-diffs}. The difference between the half-separable and fully separable variants is then correspondingly large, about \(+0.1590\) in favor of the half-separable model. The main empirical pattern is therefore not that every reduction of entanglement is equally harmful, but that removing entanglement entirely is much more damaging than thinning it out.
 
 \begin{figure}[H]
     \centering
@@ -929,8 +994,6 @@ The results for the hyperplanes diff benchmark show a somewhat different pattern
 
 Furthermore, although a small train-test gap can indicate good generalization, low train and test accuracies together more commonly suggest underfitting. This behavior appears repeatedly for the fully separable variant. This could be caused by the architectural limitation of the separable variant for which the measurement procedure remains on only the first qubit. Without entangling operations, information from distant qubits may therefore influence the output less effectively, introducing an architectural bottleneck. Overall, the train-test evidence suggests that removing entanglement entirely weakens the model primarily by reducing its ability to fit the tasks, whereas partial entanglement preserves much of that fitting capacity.
 
-The benchmark-family averages do not show a uniform relationship between overall performance and the difference in the train--test gap between the CCC and half-separable variants. There is some tendency for stronger-performing families to exhibit smaller gap differences between the two models, but this pattern is not consistent across all benchmark families. In particular, the linearly separable benchmark stands out, while several other families show only very small gap differences regardless of their absolute performance level. The observed correlation therefore depends strongly on the small number of benchmark families considered, and especially on the linearly separable case. When this benchmark is excluded, the correlation becomes much weaker. Thus, the evidence suggests, at most, a mild trend rather than a robust general relationship, or simply that benchmarks with better average test accuracies have in general low degradation and therefore low difference between gaps.
-
 \section{Limitations} 
 The results of this thesis should be interpreted within several important limitations. 
 
@@ -948,7 +1011,6 @@ Finally, the results remain subject to the usual limitations of empirical benchm
 
 \chapter{Conclusion and Outlook}
 
-\nocite{havlicek2019supervised}
 \bibliographystyle{apalike}
 \bibliography{references}
 

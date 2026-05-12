@@ -1,0 +1,26 @@
+{
+  "latex-workshop.latex.tools": [
+    {
+      "name": "latexmk-thesis-main",
+      "command": "latexmk",
+      "args": [
+        "-pdf",
+        "-interaction=nonstopmode",
+        "-synctex=1",
+        "-cd",
+        "thesis/Latex/main.tex"
+      ]
+    }
+  ],
+  "latex-workshop.latex.recipes": [
+    {
+      "name": "Build thesis/Latex/main.tex",
+      "tools": [
+        "latexmk-thesis-main"
+      ]
+    }
+  ],
+  "latex-workshop.latex.recipe.default": "first",
+  "latex-workshop.latex.autoBuild.run": "never",
+  "latex-workshop.view.pdf.viewer": "tab"
+}

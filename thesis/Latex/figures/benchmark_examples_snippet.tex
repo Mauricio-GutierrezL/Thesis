@@ -1,0 +1,35 @@
+\begin{figure}[H]
+    \centering
+    \makebox[\textwidth][c]{
+    \begin{minipage}[t]{0.66\textwidth}
+        \centering
+        \includegraphics[width=0.49\linewidth]{../plot/figures/benchmark_examples_panels/linearly_separable.pdf}\hfill
+        \includegraphics[width=0.49\linewidth]{../plot/figures/benchmark_examples_panels/hyperplanes_diff.pdf}
+
+        \vspace{0.8em}
+        \includegraphics[width=0.49\linewidth]{../plot/figures/benchmark_examples_panels/two_curves_diff.pdf}\hfill
+        \includegraphics[width=0.49\linewidth]{../plot/figures/benchmark_examples_panels/hidden_manifold.pdf}
+
+        \vspace{0.8em}
+        \includegraphics[width=0.49\linewidth]{../plot/figures/benchmark_examples_panels/two_curves.pdf}\hfill
+        \includegraphics[width=0.49\linewidth]{../plot/figures/benchmark_examples_panels/hidden_manifold_diff.pdf}
+    \end{minipage}\hspace{0.012\textwidth}
+    \begin{minipage}[t]{0.50\textwidth}
+        \centering
+        \begin{tabular}[t]{@{}c@{\hspace{0.012\linewidth}}c@{\hspace{0.008\linewidth}}c@{}}
+            \includegraphics[width=0.72\linewidth]{../plot/figures/benchmark_examples_panels/mnist_pca_3d.pdf} &
+            \includegraphics[width=0.12\linewidth]{../plot/figures/benchmark_examples_panels/mnist_pca_digit_3.png} &
+            \includegraphics[width=0.12\linewidth]{../plot/figures/benchmark_examples_panels/mnist_pca_digit_5.png} \\
+            [0.8em]
+            \includegraphics[width=0.72\linewidth]{../plot/figures/benchmark_examples_panels/mnist_pca_small_3d.pdf} &
+            \includegraphics[width=0.12\linewidth]{../plot/figures/benchmark_examples_panels/mnist_pca_small_digit_3.png} &
+            \includegraphics[width=0.12\linewidth]{../plot/figures/benchmark_examples_panels/mnist_pca_small_digit_5.png}
+        \end{tabular}
+
+        \vspace{0.5em}
+        \includegraphics[width=0.86\linewidth]{../plot/figures/benchmark_examples_panels/legend.pdf}
+    \end{minipage}
+    }
+    \caption{Illustrative examples of datasets created by the different data-generation procedures. For the scatter plots, the two classes are shown in blue and orange, and training points are shown as circles while test points are shown as triangles. High-dimensional benchmark families are displayed through two-dimensional PCA projections, while the MNIST families are shown in three dimensions together with example images of digits 3 and 5. The figure includes representative panels for the linearly separable, hyperplanes diff, hidden manifold, hidden manifold diff, two curves, two curves diff, MNIST PCA, and MNIST PCA small benchmarks.}
+    \label{fig:benchmark-examples}
+\end{figure}
