@@ -81,6 +81,14 @@ MODEL_ORDER = [
     "IQPKernelClassifierSeparable",
 ]
 
+EXCLUDED_MODELS = {
+    "CircuitCentricClassifierHalfSeparableFirst50",
+}
+
+DISPLAY_NAME_MAP = {
+    "CircuitCentricClassifierHalfSeparableRandom50": "CircuitCentricClassifierHalfSeparable",
+}
+
 FAMILY_FILTERS = {
     "ccc": {
         "models": [
@@ -135,6 +143,10 @@ def model_style(model_name, plotting_config, fallback_index):
     return color, marker, dashes
 
 
+def display_name(model_name: str) -> str:
+    return DISPLAY_NAME_MAP.get(model_name, model_name)
+
+
 def iter_result_files(model_dir: Path):
     for candidate in sorted(model_dir.glob("*_GridSearchCV-best-hyperparams-results.csv")):
         yield candidate
@@ -163,13 +175,17 @@ def collect_dataset_frame(dataset_cfg, plotting_config, allowed_models=None):
         return pd.DataFrame(), []
 
     model_dirs = sorted([p for p in dataset_root.iterdir() if p.is_dir()])
-    discovered_models = [p.name for p in model_dirs]
+    discovered_models = [p.name for p in model_dirs if p.name not in EXCLUDED_MODELS]
 
     if allowed_models is None:
-        ordered_models = [m for m in MODEL_ORDER if (dataset_root / m).is_dir()]
+        ordered_models = [
+            m for m in MODEL_ORDER if m not in EXCLUDED_MODELS and (dataset_root / m).is_dir()
+        ]
         ordered_models.extend([name for name in discovered_models if name not in ordered_models])
     else:
-        ordered_models = [m for m in allowed_models if (dataset_root / m).is_dir()]
+        ordered_models = [
+            m for m in allowed_models if m not in EXCLUDED_MODELS and (dataset_root / m).is_dir()
+        ]
 
     frames = []
     for model_index, model_name in enumerate(ordered_models):
@@ -185,7 +201,8 @@ def collect_dataset_frame(dataset_cfg, plotting_config, allowed_models=None):
 
             color, marker, dashes = model_style(model_name, plotting_config, model_index)
             df_new = df_new.copy()
-            df_new["Model"] = model_name
+            df_new["ModelId"] = model_name
+            df_new["Model"] = display_name(model_name)
             df_new["n"] = value
             df_new["dataset_stem"] = dataset_stem
             df_new["color"] = color
@@ -207,14 +224,15 @@ def plot_dataset(dataset_name, dataset_cfg, plotting_config, allowed_models=None
         print(f"No data found for {dataset_name}")
         return
 
+    display_order = [display_name(model_name) for model_name in model_order]
     palette = {}
     markers = {}
     dashes = {}
     for idx, model_name in enumerate(model_order):
         color, marker, dash = model_style(model_name, plotting_config, idx)
-        palette[model_name] = color
-        markers[model_name] = marker
-        dashes[model_name] = dash
+        palette[display_name(model_name)] = color
+        markers[display_name(model_name)] = marker
+        dashes[display_name(model_name)] = dash
 
     fig, axes = plt.subplots(1, 2, figsize=(8, 4), sharey=True, tight_layout=True)
     axes[0].set_title("train")
@@ -227,8 +245,8 @@ def plot_dataset(dataset_name, dataset_cfg, plotting_config, allowed_models=None
         y="train_acc",
         hue="Model",
         style="Model",
-        hue_order=model_order,
-        style_order=model_order,
+        hue_order=display_order,
+        style_order=display_order,
         palette=palette,
         markers=markers,
         dashes=dashes,
@@ -241,8 +259,8 @@ def plot_dataset(dataset_name, dataset_cfg, plotting_config, allowed_models=None
         y="test_acc",
         hue="Model",
         style="Model",
-        hue_order=model_order,
-        style_order=model_order,
+        hue_order=display_order,
+        style_order=display_order,
         palette=palette,
         markers=markers,
         dashes=dashes,
@@ -256,8 +274,6 @@ def plot_dataset(dataset_name, dataset_cfg, plotting_config, allowed_models=None
         axis.set_ylabel("accuracy")
         axis.set_xlabel(dataset_cfg["xlabel"])
         axis.grid(axis="y")
-
-    fig.suptitle(dataset_name, fontsize=15, y=0.9)
 
     handles, labels = axes[1].get_legend_handles_labels()
     for axis in axes:

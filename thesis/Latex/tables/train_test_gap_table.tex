@@ -1,0 +1,36 @@
+\begin{table}[htbp]
+\centering
+\small
+\setlength{\tabcolsep}{4pt}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{l|ccc|ccc|ccc}
+\hline
+\rowcolor{gray!20}
+Benchmark &
+\multicolumn{3}{c|}{\textbf{CCC}} &
+\multicolumn{3}{c|}{\textbf{Half-Sep}} &
+\multicolumn{3}{c}{\textbf{Sep}} \\
+\rowcolor{gray!12}
+&
+Train & Test & Gap &
+Train & Test & Gap &
+Train & Test & Gap \\
+\hline
+\rowcolor{gray!4}
+Linearly Separable   & \cellcolor{blue!45}0.703 & \cellcolor{blue!20}0.573 & \cellcolor{orange!45}0.130 & \cellcolor{blue!30}0.647 & \cellcolor{blue!20}0.582 & \cellcolor{orange!22}0.064 & \cellcolor{blue!18}0.553 & \cellcolor{blue!15}0.534 & \cellcolor{orange!8}0.018 \\
+Hidden Manifold      & \cellcolor{blue!78}0.827 & \cellcolor{blue!58}0.752 & \cellcolor{orange!26}0.075 & \cellcolor{blue!72}0.810 & \cellcolor{blue!54}0.735 & \cellcolor{orange!26}0.075 & \cellcolor{blue!22}0.593 & \cellcolor{blue!18}0.575 & \cellcolor{orange!8}0.017 \\
+\rowcolor{gray!4}
+Hidden Manifold Diff & \cellcolor{blue!72}0.807 & \cellcolor{blue!50}0.723 & \cellcolor{orange!30}0.084 & \cellcolor{blue!65}0.782 & \cellcolor{blue!43}0.699 & \cellcolor{orange!29}0.083 & \cellcolor{blue!21}0.584 & \cellcolor{blue!17}0.570 & \cellcolor{orange!7}0.014 \\
+Hyperplanes Diff     & \cellcolor{blue!44}0.699 & \cellcolor{blue!39}0.687 & \cellcolor{orange!5}0.012 & \cellcolor{blue!39}0.686 & \cellcolor{blue!34}0.668 & \cellcolor{orange!8}0.017 & \cellcolor{blue!26}0.625 & \cellcolor{blue!26}0.627 & \cellcolor{orange!3}-0.002 \\
+\rowcolor{gray!4}
+MNIST PCA            & \cellcolor{blue!85}0.849 & \cellcolor{blue!85}0.850 & \cellcolor{orange!3}-0.000 & \cellcolor{blue!80}0.834 & \cellcolor{blue!81}0.837 & \cellcolor{orange!3}-0.003 & \cellcolor{blue!18}0.554 & \cellcolor{blue!18}0.556 & \cellcolor{orange!3}-0.002 \\
+MNIST PCA Small      & \cellcolor{blue!88}0.868 & \cellcolor{blue!73}0.815 & \cellcolor{orange!18}0.053 & \cellcolor{blue!83}0.856 & \cellcolor{blue!70}0.807 & \cellcolor{orange!17}0.050 & \cellcolor{blue!19}0.559 & \cellcolor{blue!16}0.539 & \cellcolor{orange!8}0.020 \\
+\rowcolor{gray!4}
+Two Curves           & \cellcolor{blue!76}0.823 & \cellcolor{blue!69}0.797 & \cellcolor{orange!10}0.026 & \cellcolor{blue!75}0.819 & \cellcolor{blue!68}0.794 & \cellcolor{orange!10}0.024 & \cellcolor{blue!21}0.590 & \cellcolor{blue!19}0.586 & \cellcolor{orange!4}0.004 \\
+Two Curves Diff      & \cellcolor{blue!52}0.733 & \cellcolor{blue!37}0.681 & \cellcolor{orange!17}0.051 & \cellcolor{blue!49}0.725 & \cellcolor{blue!32}0.662 & \cellcolor{orange!22}0.063 & \cellcolor{blue!18}0.562 & \cellcolor{blue!14}0.526 & \cellcolor{orange!12}0.036 \\
+\hline
+\end{tabular}
+}
+\caption{Family-level averages of train accuracy, test accuracy, and train-test gap for the three CCC variants across the completed benchmark set. Darker blue indicates higher accuracy; darker orange indicates a larger train-test gap. The gap is defined as train minus test.}
+\label{tab:ccc-train-test-gaps}
+\end{table}

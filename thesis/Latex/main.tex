@@ -1,6 +1,7 @@
 
 % Document class and packages
 \documentclass[12pt,a4paper,openany]{report}
+\raggedbottom
 \usepackage[utf8]{inputenc}
 \usepackage[T1]{fontenc}
 \usepackage[english]{babel}
@@ -10,7 +11,22 @@
 \usepackage{float}
 \usepackage{longtable}
 \usepackage[round]{natbib}
+\usepackage{listings}
+\usepackage[table]{xcolor}
 
+\lstdefinestyle{pythonstyle}{
+    language=Python,
+    basicstyle=\ttfamily\small,
+    keywordstyle=\color{blue},
+    commentstyle=\color{gray},
+    stringstyle=\color{teal},
+    showstringspaces=false,
+    breaklines=true,
+    frame=single,
+    numbers=left,
+    numberstyle=\tiny\color{gray},
+    captionpos=b
+}
 \let\parencite\citep
 \let\textcite\citet
 
@@ -25,25 +41,36 @@
 
 % Title and author information
 \title{Quantifying quantumness: Determining the effect of quantum operations in machine learning models by comparison to classically simulatable variants}
-\author{Víctor Mauricio Gutiérrez Luque}
-\date{12, 05, 2026}
-
+\author{Víctor Mauricio Gutiérrez Luque\thanks{Computations were performed with computing resources granted by RWTH Aachen University under project \texttt{thes2204}.}}
+\date{12.05.2026}
 \begin{document}
 
 % Title page
+\begingroup
+\renewcommand{\thefootnote}{}
 \maketitle
+\endgroup
+\setcounter{footnote}{0}
 
 % Abstract
 \chapter*{Abstract}
 \addcontentsline{toc}{chapter}{Abstract}
-
-
+Quantum machine learning (QML) investigates whether quantum-mechanical representations and computations can improve machine-learning tasks. However, it is often unclear which observed performance differences are genuinely attributable to specifically quantum features rather than to architectural differences that can be implemented clasically or benchmarking effects. This thesis studies the role of entanglement in variational QML models through a controlled ablation or removal framework. The work introduces partially and fully separable variants of the Circuit-Centric Classifier (CCC) and IQP-Kernel Classifier, constructed by systematically reducing entangling interactions while keeping the remaining training and evaluation pipeline fixed. The models are evaluated on multiple synthetic and structured benchmark families, including but not limited to linearly separable, hidden-manifold, and hyperplane-based datasets. The results show that partially entangling variants often remain competitive with the original models, whereas fully separable variants typically exhibit larger performance degradation. The experiments are consistent with entanglement contributing meaningfully to performance in the studied models, while also suggesting that sparse entangling connectivity may already retain much of the observed benefit of the original architectures in this benchmark setting. The IQP-kernel experiments scaled prohibitively in higher-dimensional settings, exceeding the available computational budget.
 \tableofcontents
 
 % Chapters
-\chapter{Background and Introduction}
-% ... contenido ...
+\chapter{Introduction}
 
+\section{Introduction and Related Literature}
+
+Quantum machine learning sits at the intersection of quantum computing and statistical learning, and much of the literature has been motivated by the possibility that quantum models may represent or process patterns in ways that are classically difficult to reproduce. Foundational work on quantum feature maps, variational quantum circuits, and quantum kernels established the main model classes now used in the field \parencite{mitarai2018quantum,schuld2019evaluating,havlicek2019supervised,benedetti2019parameterized}. At the same time, more recent critical work has emphasized that the central scientific question is not simply whether a quantum model can outperform a classical baseline on a particular benchmark, but whether the observed behavior can actually be attributed to specifically quantum ingredients rather than to tuning choices, data selection, or architectural details that could also be reproduced classically \parencite{bowles2024better}.
+
+This thesis is positioned within that second line of work. Rather than treating the presence of a quantum circuit as sufficient evidence of quantum advantage, it adopts an ablation-based view in which quantum models are compared to dequantized or classically simulable variants that differ in one controlled architectural feature. The focus here is entanglement. Entanglement is often regarded as one of the defining nonclassical resources of quantum computation, but in practical QML models it is not always clear whether it is genuinely responsible for predictive performance, or whether similar results can already be obtained with sparse or even fully local structures. The methodology of this thesis is therefore to reduce entanglement systematically while keeping the rest of the pipeline fixed.
+
+The remainder of the document is structured as follows. Chapter~2 develops the background needed for the later analysis, including the basic quantum-computing formalism, core classical machine-learning concepts, the main QML model classes, and the benchmarking problem that motivates the study. Chapter~3 presents the experimental methodology, describes the benchmark families, defines the original and dequantized CCC variants, and outlines the corresponding IQP-kernel ablations together with the shared training and evaluation pipeline. Chapter~4 reports the empirical results, first quantitatively through ranking, forest, and accuracy plots, and then qualitatively through benchmark-family-level interpretation. Chapter~5 concludes by summarizing what the experiments show about entanglement in the studied models and by discussing possible directions for further work.
+
+
+\chapter{Background}
 
 \section{Quantum Computing Preliminaries}
 
@@ -213,9 +240,9 @@ A quantum circuit consists of a sequence of quantum gates acting on a register o
 To illustrate the operation of a quantum circuit, consider Grover’s algorithm \parencite{grover_1996_search}, which provides a quadratic speedup for the problem of searching an unstructured database. 
 Grover's algorithm works as followed: given a function \( f: \{0,1\}^n \rightarrow \{0,1\} \) that evaluates to \( f(x) = 1 \) for a unique input \( x = x_0 \), and \( f(x) = 0 \) otherwise, the goal is to find \( x_0 \). Classically, this requires \( \mathcal{O}(2^n) \) evaluations in the worst case, whereas Grover's algorithm achieves this in \( \mathcal{O}(\sqrt{2^n}) \) steps.
 
-\begin{figure}[H]
+\begin{figure}[htbp]
     \centering
-    \includegraphics[width=0.75\linewidth]{image.png}
+    \includegraphics[width=0.75\linewidth]{figures/grover_circuit.png}
     \caption{The quantum circuit for Grover’s algorithm}
     \label{fig:grover-circuit}
 \end{figure}
@@ -486,7 +513,7 @@ potentially rich feature space that may be hard to simulate classically.
 \subsection{The benchmarking problem in quantum machine learning}
 \label{subsec:benchmarking-qml}
 
-Before large, fault-tolerant quantum computers are available, almost all empirical evidence about quantum machine learning (QML) comes from classical simulations of small quantum models or from experiments on noisy, few-qubit devices. In this regime, \emph{benchmarking}, systematically comparing quantum models against each other and against classical baselines on common tasks, is one of the few tools available to assess whether current ideas in QML actually deliver on their promised advantages.\footnote{See \textcite{bowles2024better} for a detailed discussion and extensive references to the benchmarking literature both in classical and quantum machine learning.} 
+Before large, fault-tolerant quantum computers are available, almost all empirical evidence about quantum machine learning (QML) comes from classical simulations of small quantum models or from experiments on noisy, few-qubit devices. In this regime, \emph{benchmarking}, systematically comparing quantum models against each other and against classical baselines on common tasks, is one of the few tools available to assess whether current ideas in QML actually deliver on their promised advantages, as discussed in \textcite{bowles2024better}. 
 
 However, as \textcite{bowles2024better} argue, drawing robust conclusions from such benchmarks is surprisingly difficult: small design choices in datasets, model architectures, metrics, and hyperparameter tuning can drastically change which model ``wins''. This makes it hard to answer even seemingly simple questions such as whether a given quantum model is ``better than'' a classical one.
 
@@ -509,7 +536,7 @@ However, as \textcite{bowles2024better} argue, drawing robust conclusions from s
 
   
   \item \textbf{Systematic positivity bias in the literature.}  
-  A simple thought experiment illustrates a serious publication bias: suppose many research groups each try a large number of quantum models and datasets, but only submit papers when they find a configuration where the quantum model outperforms a classical baseline. Even if, on average, classical models tend to do better, the literature will still be dominated by positive results that claim ``quantum beats classical''. This creates a misleading impression of steady progress, even if the underlying picture is much more mixed.
+  A simple thought experiment illustrates how publication practices may create a risk of positivity bias: suppose many research groups each try a large number of quantum models and datasets, but only submit papers when they find a configuration where the quantum model outperforms a classical baseline. Even if, on average, classical models tend to do better, the literature will still be dominated by positive results that claim ``quantum beats classical''. This creates a misleading impression of steady progress, even if the underlying picture is much more mixed.
 \end{itemize}
 
 The conclusion is that broad questions of the form ``Are quantum models better than classical ones?'' cannot be answered by isolated experiments on a handful of small datasets. Instead, what can be meaningfully asked are \emph{narrow}, well-specified questions: for example, how the performance of a particular family of quantum models changes as a controlled difficulty parameter increases, or how sensitive a given ansatz is to noise, or how a quantum kernel compares to a specific classical kernel on a particular class of tasks. 
@@ -530,7 +557,7 @@ Concretely, they propose constructing ``dequantised'' variants of QML models by 
 By comparing the original model to these non-quantum or classically tractable variants on the \emph{same} benchmarks, one can probe to what extent genuine quantum effects are responsible for any observed performance differences. When a dequantised variant matches the original model, this suggests that ``quantumness'' was not the decisive ingredient, at least on the tasks and scales considered.
 
 
-Motivated by this perspective, the present work adopts a similar philosophy. Rather than taking the presence of quantum circuits as evidence of a quantum advantage, we use benchmarking as a tool to dissect our models. After introducing baseline variational quantum classifiers, we will \emph{remove} its specifically quantum features and study how performance changes. In particular, we investigate variants \emph{without entanglement} and with other classically simulable restrictions, following the dequantisation strategies suggested by \textcite{bowles2024better}. By comparing the original and dequantised models on controlled benchmarks, our goal is to understand not only \emph{how well} they perform, but also \emph{which aspects of their design truly require quantum resources}.
+Motivated by this perspective, the present work adopts a similar philosophy. Rather than taking the presence of quantum circuits as evidence of a quantum advantage, we use benchmarking as a tool to dissect our models. After introducing baseline variational quantum classifiers, we will \emph{remove} its specifically quantum features and study how performance changes. In particular, we investigate variants following the dequantisation strategies suggested by \textcite{bowles2024better}. By comparing the original and dequantised models on controlled benchmarks, our goal is to understand not only \emph{how well} they perform, but also \emph{which aspects of their design appear most dependent on quantum resources}.
 
 
 
@@ -541,29 +568,29 @@ This chapter describes the experimental setup used to study the role of entangle
 
 \section{Experimental Setup}
 
-All experiments are carried out within the benchmarking framework of \textcite{bowles2024better}, which provides a common interface for datasets, model evaluation, hyperparameter search, etc. In this thesis, I keep the overall benchmark structure of the paper and study two model families implemented in the same codebase: the Circuit-Centric Classifier introduced by \textcite{schuld2018circuit} and the IQP kernel classifier. For both families, the goal is to compare the original model against entanglement-reduced variants under matched benchmark conditions.
+All experiments are carried out within the benchmarking framework of \textcite{bowles2024better}, which provides a common interface for datasets, model evaluation and hyperparameter search. In this thesis, I keep the overall benchmark structure of the paper and study two model families implemented in the same codebase: the Circuit-Centric Classifier introduced by \textcite{schuld2018circuit} and the IQP kernel classifier from \textcite{havlicek2019supervised}. For both families, the goal is to compare the original model against entanglement-reduced variants under matched benchmark conditions.
 
-The practical motivation for this setup is straightforward: if the original model and the modified variants are trained under identical conditions, then differences in performance can be attributed more directly to architectural changes, rather than to differences in preprocessing, tuning budget, or evaluation protocol. This is especially important in QML benchmarks, where small implementation choices can otherwise dominate the comparison \parencite{bowles2024better}.
+The practical motivation for this setup is straightforward: if the original model and the modified variants are trained under identical conditions, then differences in performance can be interpreted more directly as arising from architectural changes, rather than from differences in preprocessing, tuning budget, or evaluation protocol. This is especially important in QML benchmarks, where small implementation choices can otherwise dominate the comparison \parencite{bowles2024better}.
 
 \section{Datasets}
 
 This thesis uses the same benchmark family as the reference study of \textcite{bowles2024better}. The intention is therefore not to introduce new datasets, but to reuse the same controlled tasks so that the effect of dequantization can be studied in a setting that is already established in the literature.
 
-The benchmark suite contains several dataset families, each designed to probe a different aspect of model behavior. Rather than relying on a single task, the benchmark varies either the input dimension, the intrinsic structure of the data, or the geometric complexity of the decision boundary. This makes it possible to ask more specific questions than whether a model performs well on average.
+The benchmark suite contains several dataset families, each designed to probe a different aspect of model behavior. Each benchmark vary either the input dimension, the intrinsic structure of the data, or the geometric complexity of the decision boundary. This makes it possible to ask more specific questions than whether a model performs well on average.
 
 At one end of the spectrum, the \textbf{linearly separable} benchmark serves as the simplest sanity-check task in the suite. The two classes are separated by a single hyperplane, so a basic linear classifier should already solve the problem. Its main role is therefore to test whether a model can recover a simple linear decision rule as the input dimension changes.
 
-The \textbf{bars and stripes} benchmark moves from geometric toy data to simple image structure. Samples are noisy images belonging either to the class of vertical bars or to the class of horizontal stripes. As this benchmark requires exponentially more ressource to test, we prescind from it for our experiment.
-
-The \textbf{downscaled MNIST} benchmark provides a more realistic classification task while remaining tractable for QML simulations. It uses the handwritten-digit problem restricted to digits 3 versus 5, but in reduced form. In the reference benchmark, this appears both as low-dimensional PCA representations and as coarse-grained or lower resolution image representations for convolutional models. This dataset family is useful because it bridges the gap between highly controlled synthetic tasks and simplified real-image data.
+The \textbf{downscaled MNIST} benchmark provides a more realistic classification task while remaining tractable for QML simulations. It uses the handwritten-digit problem restricted to digits 3 versus 5, but in reduced form. This is performed as as low-dimensional PCA representations and as coarse-grained or lower resolution image representations for convolutional models. This dataset family is useful because it bridges the gap between highly controlled synthetic tasks and simplified real-image data.
 
 The \textbf{hidden manifold} benchmarks are designed to mimic settings in which the observed data live or is in a high-dimensional space even though the true structure, or the manifold, is governed by fewer latent degrees of freedom, as is often the case in image and signal data. Two variants are particularly relevant. In \textbf{hidden manifold model}, the manifold dimension is held fixed while the visible input dimension increases. The underlying problem therefore remains the same, but it is embedded into a larger ambient space. In \textbf{hidden manifold diff}, by contrast, the visible dimension is fixed while the manifold dimension changes. Here the observed number of features stays constant, but the latent structure itself becomes more complex, making the task intrinsically harder.
 
 The \textbf{two curves} benchmark tests nonlinear geometric classification by generating each class from a separate one-dimensional curve. These curves are embedded into a d-dimensional feature space. The curves are constructed using low-degree Fourier series, meaning combining sine and cosine functions, which makes smooth nonlinear structures, and Gaussian noise is added so points lie near the curves. The task is to classify a new point according to which of the two curves it most likely originated from. Two curves fixes the curve complexity and the offset between the curves, but increases the feature dimension d. Two curves diff fixes the feature dimension at d=10 but makes the curves more complex and closer together.
 
-The \textbf{hyperplanes and parity} benchmark defines labels by combining several hyperplane tests. For each sample, the model must determine on which side of each hyperplane the point lies, and the final class is given by whether the number of positive-side outcomes is even or odd. This makes the task compositional, because the label depends on the combination of several simple boundary relations rather than on a single separating hyperplane. In the hyperplanes diff variant, the task becomes harder by increasing the number of hyperplanes that must be combined.
+The \textbf{hyperplanes and parity} benchmark defines labels by combining several hyperplane tests. For each sample, the model must determine on which side of each hyperplane the point lies, and the final class is given by whether the number of positive-side outcomes is even or odd. This makes the task compositional, because the label depends on the combination of several simple boundary relations rather than on a single separating hyperplane. In the \textbf{hyperplanes diff} variant, the task becomes harder by increasing the number of hyperplanes that must be combined.
 
-Taken together, these dataset families provide a controlled progression from simple linear tasks to problems with hidden low-dimensional structure, curved decision geometry, and compositional parity rules. This is important for the present thesis because it allows the role of entanglement to be studied across qualitatively different learning scenarios, rather than being inferred from a single benchmark alone.
+The original benchmark suite of Bowles et al.~\parencite{bowles2024better} also includes the \textbf{bars and stripes} dataset family, which consists of noisy images containing either vertical bars or horizontal stripes. However, this benchmark was not included in the present experiments due to its substantially higher computational cost in the considered simulation setting.
+
+Taken together, these dataset families provide a controlled progression from simple linear tasks to problems with hidden low-dimensional structure, curved decision geometry, and compositional parity rules. It allows the role of entanglement to be studied across qualitatively different learning scenarios, rather than being inferred from a single benchmark alone.
 
 \section{Circuit-Centric Classifier}
 
@@ -571,28 +598,41 @@ The first quantum model family studied in this thesis is the Circuit-Centric Cla
 
 \subsection{Input Encoding}
 
-CCC uses amplitude encoding together with repeated copies of the encoded input state. In practice, if the classical feature dimension is not already a power of two, the input is padded accordingly. Then, the resulting state is embedded multiple times through a tensor-product construction. If \(d\) denotes the number of classical input features and \(C\) denotes the number of input copies, then each amplitude-encoded register requires
+CCC uses amplitude encoding together with repeated copies of the encoded input state. In practice, if the classical feature dimension is not already a power of two, the input is padded accordingly. If \(d\) denotes the number of classical input features and \(C\) denotes the number of input copies, then each amplitude-encoded register requires
 \[
 \left\lceil \log_2(d) \right\rceil
 \]
 qubits. Therefore, the total number of qubits in the model is
 \[
 M = C \cdot \left\lceil \log_2(d) \right\rceil .
-\]. 
+\] 
 
 This part of the model is inherited directly from the original CCC and is identical for the original and dequantized variants.
 
 \subsection{Variational Circuit and Prediction Rule}
 
-This is the part of the tensor product construction. In the reference implementation used here, the original CCC employs PennyLane's \texttt{StronglyEntanglingLayers} as its variational block. The model output is computed from the expectation value of the Pauli-\(Z\)
+After the embedding, the original CCC pipeline uses PennyLane's variational block
+\texttt{StronglyEntanglingLayers} \parencite{pennylane_strongly_entangling_layers}. This block consists of several consecutive
+layers. Each layer first applies trainable single-qubit rotations to all qubits,
+followed by entangling gates between pairs of qubits. Across layers, the
+entangling pattern changes by using larger ranges.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.8\linewidth]{figures/strongly_entangling_layers.png}
+    \caption{Example of two 4-qubit strongly entangling layers (ranges \(r=1\) and \(r=2\), respectively) with rotations \(R\) and CNOTs as imprimitives, adapted from \textcite{pennylane_strongly_entangling_layers}.}
+    \label{fig:layer-sec}
+\end{figure}
+
+The model output afterwards is computed from the expectation value of the Pauli-\(Z\)
 observable measured on the first qubit. This expectation value is a scalar in
 the interval \([-1,1]\), to which a trainable bias term \(b\) is added to obtain
 the final score. 
-For the purposes of this thesis, the important point is that the prediction rule is kept fixed across all CCC variants. The only systematic modification concerns the internal entangling structure of the variational circuit.
+The prediction rule is kept fixed across all CCC variants and the only systematic modification concerns the internal entangling structure of the variational circuit.
 
 \section{Dequantized CCC Variants}
 
-The methodological contribution of this thesis is not a new model family, but a controlled modification of CCC designed to reduce or remove entanglement while preserving the rest of the architecture as far as possible. This follows the ablation perspective advocated by \textcite{bowles2024better}.
+We consider controlled modifications of CCC designed to reduce or remove entanglement while preserving the rest of the architecture as far as possible. This follows the ablation perspective advocated by \textcite{bowles2024better}.
 
 To this end, I introduce dequantized CCC variants that keep the same embedding, the same measurement rule, the same training pipeline, and the same overall role of the variational block, but replace the original ansatz by a custom controlled construction in which the amount of entanglement can be adjusted directly.
 
@@ -622,27 +662,147 @@ Operationally, $\alpha$ controls how much entangling structure is available to t
 \begin{itemize}
   \item $\alpha = 0$ removes all two-qubit gates and yields a fully separable circuit,
   \item $0 < \alpha < 1$ produces partially entangling circuits, and
-  \item $\alpha = 1$ refers to all the entangling gates activated.
+  \item $\alpha = 1$ refers to all the entangling gates activated, which is equivalent to \texttt{StronglyEntanglingLayers}.
 \end{itemize}
 
-In the current implementation, the entangling gate can be chosen as either a controlled-NOT or a controlled-$Z$ gate. This thesis does not compare gate primitives directly; the central methodological parameter is the fraction of active entangling edges.
+\begin{figure}[H]
+    \centering
+    \setlength{\tabcolsep}{2pt}
+    \renewcommand{\arraystretch}{1.0}
+
+    \makebox[\textwidth][c]{%
+    \begin{tabular}{cc}
+        \includegraphics[width=0.53\textwidth,keepaspectratio]{figures/controlled_ccc/controlled_ccc_alpha_0p0_r1.png} &
+        \includegraphics[width=0.53\textwidth,keepaspectratio]{figures/controlled_ccc/controlled_ccc_alpha_0p0_r2.png} \\[-0.2em]
+        \multicolumn{2}{c}{\includegraphics[width=0.53\textwidth,keepaspectratio]{figures/controlled_ccc/controlled_ccc_alpha_0p0_r3.png}} \\[0.2em]
+
+        \includegraphics[width=0.53\textwidth,keepaspectratio]{figures/controlled_ccc/controlled_ccc_alpha_0p5_r1.png} &
+        \includegraphics[width=0.53\textwidth,keepaspectratio]{figures/controlled_ccc/controlled_ccc_alpha_0p5_r2.png} \\[-0.2em]
+        \multicolumn{2}{c}{\includegraphics[width=0.53\textwidth,keepaspectratio]{figures/controlled_ccc/controlled_ccc_alpha_0p5_r3.png}} \\[0.2em]
+
+        \includegraphics[width=0.53\textwidth,keepaspectratio]{figures/controlled_ccc/controlled_ccc_alpha_1p0_r1.png} &
+        \includegraphics[width=0.53\textwidth,keepaspectratio]{figures/controlled_ccc/controlled_ccc_alpha_1p0_r2.png} \\[-0.2em]
+        \multicolumn{2}{c}{\includegraphics[width=0.53\textwidth,keepaspectratio]{figures/controlled_ccc/controlled_ccc_alpha_1p0_r3.png}}
+    \end{tabular}%
+    }
+
+\caption{Example of the controlled CCC ansatz for \(M=4\) qubits and three interaction ranges \(r=1,2,3\). Each panel shows one layer consisting of local rotations \(R(\alpha_i^\ell,\beta_i^\ell,\gamma_i^\ell)\), followed by the active CNOT couplings selected by the entanglement-control parameter.}
+    \label{fig:controlled-ccc-ansatz}
+\end{figure}
+
 
 \subsection{Separable and Half-Separable Variants}
 
 Two dequantized variants are considered in this work.
 
-The first is the \emph{separable} CCC. Here the entanglement-control parameter is set to $\alpha = 0$. As a result, no two-qubit gates are applied anywhere in the variational block. The circuit therefore remains fully local, and this constitutes the strongest dequantization step considered in the thesis.
+The first is the \emph{separable} CCC. Here the entanglement-control parameter is set to $\alpha = 0$. As a result, no two-qubit gates are applied anywhere in the variational block. The circuit therefore remains fully local, and this constitutes the strongest dequantization step considered.
 
-The second is the \emph{half-separable} CCC. Here the entanglement-control parameter is set to $\alpha = 0.5$, so that approximately half of the candidate two-qubit couplings in each layer remain active. This model occupies an intermediate position between the original entangling CCC and the fully separable version. It is methodologically useful because it allows us to test whether performance degrades gradually as entanglement is reduced, or whether most of the observed behavior can already be reproduced with only limited entangling structure.
+The second is the \emph{half-separable} CCC. Here the entanglement-control parameter is set to $\alpha = 0.5$, so that approximately half of the candidate two-qubit couplings in each layer remain active. This model occupies an intermediate position between the original entangling CCC and the fully separable version. It is methodologically useful because it allows us to test whether performance degrades gradually as entanglement is reduced, or whether most of the observed behavior can already be reproduced with only limited entangling structure. It uses a seeded random 50\% subset instead, which preserves reproducibility while avoiding this ordering bias.
 
-During development, a deterministic \emph{first-50\%} selection rule was also tested, in which the first half of the candidate couplings in each layer was kept active. However, this turned out to be a poor choice for the final comparison because it ties the definition of the model to the arbitrary ordering of edges in the circuit construction rather than only to the intended entanglement level. For this reason, the final half-separable variant uses a seeded random 50\% subset instead, which preserves reproducibility while avoiding this ordering bias.
+The implementation of this controlled ansatz is shown in
+Listing~\ref{lst:controlled-ansatz-relevant}, which is a modified version from \ref{lst:strongly-entangling-relevant}.
+\begin{lstlisting}[
+    style=pythonstyle,
+    caption={Relevant logic of PennyLane's \texttt{StronglyEntanglingLayers} template~\parencite{pennylane_strongly_entangling_layers}.},
+    label={lst:strongly-entangling-relevant}
+]
+for l in range(n_layers):
 
-Taken together, the three models studied in this chapter form a simple entanglement ablation ladder:
-\begin{itemize}
-  \item original CCC with a fully entangling benchmark ansatz,
-  \item half-separable CCC with partial entangling connectivity, and
-  \item separable CCC with no entangling gates.
-\end{itemize}
+    # Single-qubit rotation on every qubit
+    for i in range(len(wires)):
+        op_list.append(
+            Rot(
+                weights[..., l, i, 0],
+                weights[..., l, i, 1],
+                weights[..., l, i, 2],
+                wires=wires[i],
+            )
+        )
+
+    if len(wires) > 1:
+        # Candidate entangling edges for range ranges[l]
+        for i in range(len(wires)):
+            act_on = wires.subset(
+                [i, i + ranges[l]],
+                periodic_boundary=True,
+            )
+
+            # All candidate edges are active
+            op_list.append(imprimitive(wires=act_on))
+\end{lstlisting}
+
+\begin{lstlisting}[
+    style=pythonstyle,
+    caption={Relevant controlled-ansatz logic implemented in \texttt{src/qml\_benchmarks/models/circuit\_centric.py}.},
+    label={lst:controlled-ansatz-relevant}
+]
+for l in range(self.n_layers):
+
+    # Single-qubit rotation on every qubit
+    for i in range(M):
+        qml.Rot(
+            weights[l, i, 0],
+            weights[l, i, 1],
+            weights[l, i, 2],
+            wires=i,
+        )
+
+    if M > 1:
+        # Interaction range for layer l
+        r = (l % (M - 1)) + 1
+
+        # Ring-like candidate entangling edge set
+        edges = [(i, (i + r) % M) for i in range(M)]
+
+        # Entanglement-control parameter alpha
+        # alpha = self.entanglement_level
+        k = int(round(self.entanglement_level * len(edges)))
+
+        if k > 0:
+            rng = np.random.default_rng(
+                self.random_state + 1000 * l
+            )
+
+            # Active entangling edges
+            idx = rng.choice(len(edges), size=k, replace=False)
+            idx.sort()
+
+            for j in idx:
+                a, b = edges[j]
+                gate(wires=[a, b])
+\end{lstlisting}
+
+The concrete half-separable and fully separable CCC variants are obtained through wrapper classes that use the same controlled ansatz but fix \texttt{entanglement\_level} to \(0.5\) and \(0.0\), respectively, as shown below.
+\refstepcounter{lstlisting}
+\noindent\begin{minipage}{\textwidth}
+\centering
+
+\begin{minipage}{0.48\textwidth}
+\begin{lstlisting}[style=pythonstyle, basicstyle=\ttfamily\scriptsize, numbers=none]
+class HalfSeparable(CircuitCentricClassifier):
+    def __init__(self, ...):
+        super().__init__(
+            ansatz_type="controlled",
+            entanglement_level=0.5, ...
+        )
+\end{lstlisting}
+\end{minipage}
+\hfill
+\begin{minipage}{0.48\textwidth}
+\begin{lstlisting}[style=pythonstyle, basicstyle=\ttfamily\scriptsize, numbers=none]
+class Separable(CircuitCentricClassifier):
+    def __init__(self, ...):
+        super().__init__(
+            ansatz_type="controlled",
+            entanglement_level=0.0, ...
+        )
+\end{lstlisting}
+\end{minipage}
+
+\label{lst:ccc-wrapper-minimal}
+\par\smallskip
+{\small Listing \thelstlisting: Wrappers for half-separable and fully separable CCC variants.\par}
+\end{minipage}
 
 \section{IQP Kernel Classifier}
 
@@ -672,97 +832,123 @@ These IQP-kernel variants are methodologically useful because they allow the ent
 
 All model variants are trained within the same benchmark pipeline. This includes the same dataset generation, the same train-test protocol, the same hyperparameter-search infrastructure, and the same result logging format. The purpose of this uniform setup is to ensure that the comparison between CCC and its dequantized variants is an ablation study of model structure rather than a comparison between different experimental conditions.
 
-For CCC, the implementations are trained as binary classifiers with labels in $\{-1,+1\}$. The model parameters consist of the variational circuit parameters together with the scalar bias term. Hyperparameters such as the number of input copies, the number of variational layers, optimization settings, and related training parameters are selected through the same search procedure used by the benchmark framework. This point matters because, as emphasized by \textcite{bowles2024better}, hyperparameter tuning can strongly affect benchmark outcomes in QML.
+For CCC, the implementations are trained as binary classifiers with labels in $\{-1,+1\}$. The model parameters consist of the variational circuit parameters together with the scalar bias term. Hyperparameters such as the number of input copies, the number of variational layers and learning rate are selected through the same search procedure used by the benchmark framework. This point matters because, as emphasized by \textcite{bowles2024better}, hyperparameter tuning can strongly affect benchmark outcomes in QML.
 
-For the IQP-kernel family, the training flow is different but the benchmarking philosophy is the same. The quantum circuit is used to construct kernel matrices, and classification is then performed by a classical SVM backend. The main hyperparameters are the number of IQP repeats and the SVM regularisation parameter. The entanglement ablations are therefore applied at the level of the kernel feature map rather than at the level of a trainable variational circuit.
-
+For the IQP-kernel family, the training flow is different but the benchmarking philosophy is the same. The quantum circuit is used to construct kernel matrices, and classification is then performed by a classical SVM backend. The main hyperparameters are the number of IQP repeats and the SVM regularisation parameter.
 \section{Evaluation}
 
-Model performance is evaluated primarily through classification accuracy on the benchmark tasks. Since the study is comparative rather than hardware-focused, the central object of interest is the relative ranking of the original and dequantized CCC variants across datasets and benchmark settings. The experiments therefore examine not only absolute scores, but also whether removing entanglement changes the ordering of models across tasks of different difficulty.
+Model performance is evaluated primarily through test accuracy on the benchmark tasks. The central object of interest is the relative ranking of the original and dequantized CCC variants across datasets and benchmark settings. The experiments therefore examine not only absolute scores, but also whether removing entanglement changes the ordering of models across tasks of different difficulty.
 
-From the perspective of the thesis, the key interpretive question is the following: if a partially entangling or fully separable variant performs similarly to the original CCC, then the benefit of the original model cannot be attributed straightforwardly to entanglement. Conversely, if performance drops consistently as entanglement is restricted, this provides evidence that entangling structure is playing a nontrivial role in the model's inductive bias.
+All reported results come from the benchmark framework described in this chapter. Train accuracy is used only as a secondary diagnostic to assess whether changes in test performance are associated with changes in fitting capacity or with possible overfitting.
 
-All reported results come from the benchmark framework described in this chapter. For each dataset instance, each model is trained with the same preprocessing, the same train-test split convention, and the same hyperparameter-search machinery. The primary metric used in the present analysis is test accuracy. Train accuracy is used only as a secondary diagnostic to assess whether changes in test performance are associated with changes in fitting capacity or with possible overfitting.
+\section{Reproducibility}
+All experiments were conducted within a modified benchmark setup based on the \texttt{qml\_benchmarks} repository. The exact codebase used in this thesis is available at \url{https://github.com/Mauricio-GutierrezL/Thesis}. This repository provided the common experimental pipeline for dataset handling, model training, hyperparameter selection, and final evaluation. The overall benchmarking methodology follows the framework discussed by \citet{bowles2024better}. The computational environment was based on Python 3.9.21 and used PennyLane 0.38.0 together with JAX, with 64-bit precision enabled via \path{jax.config.update("jax_enable_x64", True)}. Additional core dependencies included scikit-learn, NumPy, and matplotlib. The modified implementations of the Circuit-Centric Classifier variants introduced in this thesis are located in \path{src/qml_benchmarks/models/circuit_centric.py}. Benchmark datasets were stored under \path{thesis/datasets_tests/}, while experiment outputs and aggregated results were written to \path{thesis/my_results/}.
 
+All runs were executed on the RWTH Aachen CLAIX HPC cluster using CPU-only jobs scheduled through Slurm. Hyperparameter optimization was performed with \texttt{GridSearchCV} using five-fold cross-validation, and the same train/test evaluation pipeline was applied uniformly across all compared models in order to ensure methodological consistency.
 
+Benchmark datasets were generated with the utility script \path{thesis/generate_paper_benchmarks.py}, built on top of the data-generation functions in \path{src/qml_benchmarks/data/}. The benchmark-specific parameter choices in this script follow the original benchmark-generation setup from \path{paper/benchmarks/}. Dataset generation used fixed seeds per benchmark family, including \texttt{42} for linearly separable and MNIST-PCA data, \texttt{3} for hidden-manifold and two-curves families, and \texttt{1} for hyperplanes diff.
 
+Model-level randomness was controlled through the classifier parameter \texttt{random\_state}. In the controlled ansatz, this parameter determines the seeded pseudorandom selection of active entangling edges, ensuring reproducibility of the selected edge subsets. During final scoring, each selected model was evaluated over five runs with \texttt{random\_state} values \(0,\dots,4\). In addition, the execution scripts \path{scripts/run_hyperparameter_search.py} and \path{scripts/score_with_best_hyperparameters.py} set \texttt{np.random.seed(42)} globally in order to make script-level NumPy randomness reproducible.
 \chapter{Results}
 
 \section{Quantitative Results}
 
-Across the completed dataset instances, the original entangling CCC is the strongest model overall. It achieves the best test accuracy on 90 instances, while the half-separable random-50 variant is best on 31 instances and the fully separable model is best on 13 instances. This already shows a clear hierarchy: the original model is usually strongest, the half-separable variant is often competitive, and the fully separable model is only occasionally best.
+ Figure~\ref{fig:ccc-ranking-all} summarizes the aggregate ranking behavior of the three CCC variants across the completed benchmark set. For each model, the stacked bar shows how often it finished in each rank across all datasets on which it was tested, with blue indicating first place, white indicating second place, and red indicating last place. The models are ordered from top to bottom by average normalized rank, so better-performing models appear higher in the figure. Figure~\ref{fig:ccc-ranking-all-families} summarizes it as well but per benchmark family.
+ 
+The original entangling CCC is the strongest model overall. It achieves the best test accuracy on 90 instances, while the half-separable variant is best on 31 instances and the fully separable model is best on 13 instances. This shows a clear hierarchy: the original model is usually strongest, the half-separable variant is often competitive, and the fully separable model is only occasionally best.
 
-\begin{figure}[H]
+\begin{figure}[htbp]
     \centering
     \includegraphics[width=0.82\linewidth]{../plot/figures/ranking-all.png}
-    \caption{Aggregate ranking of the three CCC variants across the completed benchmark set.}
+    \caption{Number of rankings (blue/first to red/last) across all datasets on which each model was tested, for the three CCC model families. The models are ordered from top to bottom by average normalized rank.}
     \label{fig:ccc-ranking-all}
 \end{figure}
 
-A more informative picture comes from the average accuracy differences. Relative to the original CCC, the half-separable random-50 variant shows only a small mean loss in test accuracy across the completed benchmark set, about \(-0.0127\). By contrast, the fully separable model is markedly worse, with a mean test-accuracy difference of about \(-0.1638\) relative to the original CCC. The difference between the half-separable and fully separable variants is correspondingly large, about \(+0.1510\) in favor of the half-separable model. The main empirical pattern is therefore not that every reduction of entanglement is equally harmful, but that \emph{removing entanglement entirely is much more damaging than thinning it out}.
+Relative to the original CCC, the half-separable variant shows only a small mean loss in test accuracy across the completed benchmark set, about \(-0.0116\). By contrast, the fully separable model is markedly worse, with a mean test-accuracy difference of about \(-0.1705\) relative to the original CCC. This can be seen in Figure~\ref{fig:ccc-forest-diffs}. The difference between the half-separable and fully separable variants is then correspondingly large, about \(+0.1590\) in favor of the half-separable model. The main empirical pattern is therefore not that every reduction of entanglement is equally harmful, but that removing entanglement entirely is much more damaging than thinning it out.
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.49\linewidth]{../plot/figures/ranking-linearly-separable.png}
-    \includegraphics[width=0.49\linewidth]{../plot/figures/ranking-hidden-manifold.png}
-    \includegraphics[width=0.49\linewidth]{../plot/figures/ranking-hmm-diff.png}
-    \includegraphics[width=0.49\linewidth]{../plot/figures/ranking-hyperplanes-diff.png}
-    \caption{Per-family ranking plots for linearly separable, hidden manifold, hidden manifold diff, and hyperplanes diff.}
-    \label{fig:ccc-ranking-geom}
+    \includegraphics[width=0.49\linewidth]{../plot/figures/forest-ccc-half-minus-ccc.png}%
+    \includegraphics[width=0.49\linewidth]{../plot/figures/forest-ccc-separable-minus-ccc.png}\par\vspace{-0.8\baselineskip}
+    \caption{Forest plots of paired mean test-accuracy differences for the dequantized CCC variants relative to the original CCC. Each point is the average benchmark-wise test-accuracy difference within a family, and each horizontal interval shows the corresponding 95\% confidence interval across matched benchmark instances. Negative values indicate worse performance than the original CCC. The horizontal scales differ between the two panels.}
+    \label{fig:ccc-forest-diffs}
 \end{figure}
 
-\begin{figure}[H]
+\begin{figure}[htbp]
     \centering
-    \includegraphics[width=0.49\linewidth]{../plot/figures/ranking-mnist-pca.png}
-    \includegraphics[width=0.49\linewidth]{../plot/figures/ranking-mnist-pca-small.png}
-    \includegraphics[width=0.49\linewidth]{../plot/figures/ranking-two-curves.png}
-    \includegraphics[width=0.49\linewidth]{../plot/figures/ranking-two-curves-diff.png}
-    \caption{Per-family ranking plots for MNIST PCA, MNIST PCA small, two curves, and two curves diff.}
-    \label{fig:ccc-ranking-vision-curves}
+    \parbox[t]{0.47\linewidth}{\centering \small \textbf{Linearly Separable}\par\includegraphics[width=0.96\linewidth]{../plot/figures/ranking-linearly-separable.png}}
+    \parbox[t]{0.47\linewidth}{\centering \small \textbf{Hidden Manifold}\par\includegraphics[width=0.96\linewidth]{../plot/figures/ranking-hidden-manifold.png}}
+    \parbox[t]{0.47\linewidth}{\centering \small \textbf{Hidden Manifold Diff}\par\includegraphics[width=0.96\linewidth]{../plot/figures/ranking-hmm-diff.png}}
+    \parbox[t]{0.47\linewidth}{\centering \small \textbf{Hyperplanes Diff}\par\includegraphics[width=0.96\linewidth]{../plot/figures/ranking-hyperplanes-diff.png}}
+    \parbox[t]{0.47\linewidth}{\centering \small \textbf{MNIST PCA}\par\includegraphics[width=0.96\linewidth]{../plot/figures/ranking-mnist-pca.png}}
+    \parbox[t]{0.47\linewidth}{\centering \small \textbf{MNIST PCA Small}\par\includegraphics[width=0.96\linewidth]{../plot/figures/ranking-mnist-pca-small.png}}
+    \parbox[t]{0.47\linewidth}{\centering \small \textbf{Two Curves}\par\includegraphics[width=0.96\linewidth]{../plot/figures/ranking-two-curves.png}}
+    \parbox[t]{0.47\linewidth}{\centering \small \textbf{Two Curves Diff}\par\includegraphics[width=0.96\linewidth]{../plot/figures/ranking-two-curves-diff.png}}
+    \caption{Per-family ranking plots for all completed benchmark families: linearly separable, hidden manifold, hidden manifold diff, hyperplanes diff, MNIST PCA, MNIST PCA small, two curves, and two curves diff.}
+    \label{fig:ccc-ranking-all-families}
 \end{figure}
 
-This pattern is also visible when the results are broken down by benchmark family. On linearly separable data, the half-separable variant is slightly better on average than the original model, by about \(+0.0091\), while the fully separable model is slightly worse, by about \(-0.0391\). This suggests that for the simplest tasks the full entangling structure is not necessary and may even be mildly excessive. On hyperplanes diff, the three variants are comparatively close, with the separable model behind the original by only about \(-0.0598\). By contrast, on hidden manifold, hidden manifold diff, MNIST PCA, MNIST PCA small, and two curves diff, the fully separable model is consistently and often substantially worse than the original CCC. The effect is especially pronounced on the MNIST PCA families, where the separable model trails the original by about \(-0.2934\) and \(-0.2765\), respectively.
-
-The half-separable variant occupies an intermediate but important position. On most benchmark families it is slightly worse than the original CCC, but the drop is small compared with the fully separable case. For example, the average test-accuracy difference half-minus-full is about \(-0.0163\) on hidden manifold, \(-0.0237\) on hidden manifold diff, \(-0.0188\) on hyperplanes diff, \(-0.0124\) on MNIST PCA, \(-0.0088\) on MNIST PCA small, and \(-0.0193\) on two curves diff. These values are modest enough to suggest that a sparse entangling structure preserves a substantial fraction of the original model's performance.
-
-\begin{figure}[H]
+\begin{figure}[htbp]
     \centering
-    \includegraphics[width=0.49\linewidth]{../plot/figures/score-linearly_separable-ccc-qnn.png}
-    \includegraphics[width=0.49\linewidth]{../plot/figures/score-hidden_manifold-qnn.png}
-    \includegraphics[width=0.49\linewidth]{../plot/figures/score-hidden_manifold_diff-qnn.png}
-    \includegraphics[width=0.49\linewidth]{../plot/figures/score-hyperplanes_diff-qnn.png}
-    \caption{Train and test accuracy curves for the completed geometric benchmark families: linearly separable, hidden manifold, hidden manifold diff and hyperplanes diff.}
-    \label{fig:ccc-scores-geom}
+    \parbox[t]{0.47\linewidth}{\centering \small \textbf{Linearly Separable}\par\includegraphics[width=0.96\linewidth]{../plot/figures/score-linearly_separable-ccc-qnn.png}}
+    \parbox[t]{0.47\linewidth}{\centering \small \textbf{Hidden Manifold}\par\includegraphics[width=0.96\linewidth]{../plot/figures/score-hidden_manifold-qnn.png}}
+    \parbox[t]{0.47\linewidth}{\centering \small \textbf{Hidden Manifold Diff}\par\includegraphics[width=0.96\linewidth]{../plot/figures/score-hidden_manifold_diff-qnn.png}}
+    \parbox[t]{0.47\linewidth}{\centering \small \textbf{Hyperplanes Diff}\par\includegraphics[width=0.96\linewidth]{../plot/figures/score-hyperplanes_diff-qnn.png}}
+    \parbox[t]{0.47\linewidth}{\centering \small \textbf{MNIST PCA}\par\includegraphics[width=0.96\linewidth]{../plot/figures/score-mnist_pca-qnn.png}}
+    \parbox[t]{0.47\linewidth}{\centering \small \textbf{MNIST PCA Small}\par\includegraphics[width=0.96\linewidth]{../plot/figures/score-mnist_pca--qnn.png}}
+    \parbox[t]{0.47\linewidth}{\centering \small \textbf{Two Curves}\par\includegraphics[width=0.96\linewidth]{../plot/figures/score-two_curves-qnn.png}}
+    \parbox[t]{0.47\linewidth}{\centering \small \textbf{Two Curves Diff}\par\includegraphics[width=0.96\linewidth]{../plot/figures/score-two_curves_diff-qnn.png}}
+    \caption{Train and test accuracy curves for all completed benchmark families: linearly separable, hidden manifold, hidden manifold diff, hyperplanes diff, MNIST PCA, MNIST PCA small, two curves, and two curves diff.}
+    \label{fig:ccc-scores-all}
 \end{figure}
 
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.49\linewidth]{../plot/figures/score-mnist_pca-qnn.png}
-    \includegraphics[width=0.49\linewidth]{../plot/figures/score-mnist_pca--qnn.png}
-    \includegraphics[width=0.49\linewidth]{../plot/figures/score-two_curves-qnn.png}
-    \includegraphics[width=0.49\linewidth]{../plot/figures/score-two_curves_diff-qnn.png}
-    \includegraphics[width=0.49\linewidth]{../plot/figures/score-bars_and_stripes-qnn.png}
-    \caption{Train and test accuracy curves for MNIST PCA, MNIST PCA small, two curves, two curves diff, and bars and stripes.}
-    \label{fig:ccc-scores-other}
-\end{figure}
 
-The train-versus-test comparison is broadly consistent with this interpretation. Averaged over the completed benchmark set, the original CCC reaches about 0.7850 train accuracy and 0.7274 test accuracy, while the half-separable variant reaches about 0.7642 train accuracy and 0.7146 test accuracy. The separable model is much lower on both metrics, with about 0.5779 train accuracy and 0.5636 test accuracy. In other words, the separable model does not merely generalize worse after fitting the data equally well; it appears to have substantially lower effective fitting capacity on these tasks. This is especially visible on hidden manifold, MNIST, and two-curves benchmarks.
+This pattern is also visible when the results are broken down by benchmark family, as shown by the forest plots in Figure~\ref{fig:ccc-forest-diffs}. On linearly separable data, the half-separable variant is slightly better on average than the original model, by about \(+0.0091\), while the fully separable model is slightly worse, by about \(-0.0391\). This suggests that for the simplest tasks in the completed benchmark set, the full entangling structure may not be necessary. On hyperplanes diff, the three variants are comparatively close, with the separable model behind the original by only about \(-0.0598\). By contrast, on hidden manifold, hidden manifold diff, MNIST PCA, MNIST PCA small, and two curves diff, the fully separable model is consistently and often substantially worse than the original CCC. The effect is especially pronounced on the MNIST PCA families, where the separable model trails the original by about \(-0.2934\) and \(-0.2765\), respectively.
 
-The main quantitative conclusion from the completed CCC data is therefore the following: the original entangling CCC is usually best, but the half-separable random-50 variant remains surprisingly competitive, whereas the fully separable model often incurs a substantial loss. Entanglement appears to matter, but the completed results suggest that \emph{full entangler density is often not required to obtain most of the performance of the original model}.
+The half-separable variant occupies an intermediate position. On most benchmark families it is slightly worse than the original CCC, but the drop is small compared with the fully separable case. For example, the average test-accuracy difference half-minus-full is about \(-0.0163\) on hidden manifold, \(-0.0237\) on hidden manifold diff, \(-0.0188\) on hyperplanes diff, \(-0.0124\) on MNIST PCA, \(-0.0088\) on MNIST PCA small, and \(-0.0193\) on two curves diff. These values are modest enough to suggest that, across the completed CCC benchmark families, a sparse entangling structure retains a substantial fraction of the original model's performance, which is also reflected in the train and test curves shown in Figure~\ref{fig:ccc-scores-all}.
+
+The train-versus-test comparison is broadly consistent with this interpretation. Averaged over the completed benchmark set, the original CCC reaches about 0.7886 train accuracy and 0.7347 test accuracy, while the half-separable variant reaches about 0.7698 train accuracy and 0.7232 test accuracy. The separable model is much lower on both metrics, with about 0.5775 train accuracy and 0.5642 test accuracy. In other words, the separable model does not merely generalize worse after fitting the data equally well; it appears to have substantially lower effective fitting capacity on these tasks. This can be seen in Table~\ref{tab:ccc-train-test-gaps}.
+
+\input{tables/train_test_gap_table}
+
+The main quantitative conclusion from the completed CCC data is the following: the original entangling CCC is usually best, but the half-separable variant remains competitive, whereas the fully separable model often incurs a substantial loss. Entanglement appears to matter in this benchmark setting, but the completed results suggest that full entangler density is often not required to obtain most of the performance of the original model on the tasks studied here.
 
 \section{Qualitative Interpretation}
 
-Although the benchmark suite is synthetic and controlled, the dataset families probe meaningfully different kinds of structure, and the effect of entanglement is not uniform across them.
+The dataset families probe different kinds of structure, and the effect of entanglement is not uniform across them.
 
-For linearly separable data, the results are unsurprising: a highly expressive entangling circuit is not needed to implement a linear decision rule. The fact that the half-separable model can slightly outperform the original CCC on this family is therefore plausible and should not be over-interpreted as evidence against entanglement. Instead, it suggests that the full model may be using more representational freedom than the task demands.
+The linearly separable benchmark primarily tests whether a model can recover a simple hyperplane-based decision rule; a task a simple linear classifier should be able to do. Since this structure does not require complex nonlinear or compositional feature interactions, small differences between the CCC variants on this family are consistent with the expectation that strong entangling connectivity is not central for this task. However, the relatively modest absolute accuracies limit the strength of this interpretation. In particular, the slight advantage of the half-separable variant over the original CCC should not be over-interpreted as evidence against the usefulness of entanglement more broadly. The task may be simple enough that the full entangling structure provides more representational capacity than necessary, potentially leading to overfitting. This interpretation is supported by the larger train--test gap observed for the original CCC, which is the largest among all.
 
-The hidden-manifold families tell a different story. There the fully separable model drops substantially, while the original and half-separable variants remain much closer. Since these benchmarks are intended to probe structure that is embedded nontrivially in a larger feature space, this pattern is consistent with the idea that some nonlocal interaction structure in the variational block helps the model align with the task geometry.
+The hidden-manifold families tell a different story. There the fully separable model drops substantially, while the original and half-separable variants remain much closer. Since these benchmarks are intended to probe structure that is embedded nontrivially in a larger feature space; both as the hidden structure complexity remains constant and the feature dimensions grow in number and vice versa, the found pattern is consistent with the idea that some nonlocal interaction structure in the variational block helps the model align with the task. 
 
-The same qualitative conclusion appears on the MNIST PCA families and on two curves diff. In these settings, eliminating entanglement entirely leads to a pronounced reduction in performance, while keeping a sparse random half of the entangling couplings preserves much more of the original score. In practical terms, this means that a moderate amount of entangling structure is enough to capture most of the gain, whereas a fully local circuit is often too weak.
+Similarly, MNIST PCA families show a particularly pronounced degradation of the fully separable model relative to the original CCC and the half-separable variant. Although the separable model also performs poorly on linearly separable and two-curves-diff benchmarks, those families are challenging for the entangling variants as well. The MNIST PCA case is therefore more distinctive, because the performance loss appears especially specific to the fully separable architecture. One possible explanation is that MNIST PCA retains distributed image-like structure, where class-relevant information is spread across several input components. Without entangling operations, this information cannot be effectively mixed across qubits before the final first-qubit measurement, making the separable variant particularly susceptible to an architectural bottleneck.
 
+The standard two-curves benchmark shows a qualitatively similar pattern to the MNIST PCA families: removing entanglement entirely leads to a pronounced degradation of the fully separable model, while the half-separable variant remains much closer to the original CCC. The two-curves-diff benchmark, however, should be interpreted separately. Its lower performance for the original CCC and the half-separable variant can be attributed to the construction of the task itself. While the standard two-curves benchmark keeps the curve complexity fixed, two-curves-diff increases the geometric complexity of the underlying curves at fixed feature dimension. The resulting decision structure is more intricate and may require the model to capture more oscillatory nonlinear relations between features. Therefore, the reduced performance of the entangling variants on two-curves-diff is better understood as reflecting the intrinsic difficulty of the benchmark, rather than only the effect of entanglement reduction.
+
+The results for the hyperplanes diff benchmark show a somewhat different pattern from the other benchmark families. For the CCC and HalfSeparable models, which both retain entangling operations to different degrees, hyperplanes diff performs relatively poorly compared with the other benchmarks. In contrast, the fully separable model performs comparatively well on this benchmark. One possible explanation is that this task depends less on learning rich entangled feature interactions and more on combining several local boundary relations. In this setting, the local rotations of the separable model may still be sufficient to capture a substantial part of the repeated hyperplane structure. To provide a contrast example, in hidden manifold diff, the hidden structure governing the data becomes richer and more complex, and in two curves diff, the Fourier degree increases, making the curves more oscillatory and geometrically intricate. Therefore, the classifier may need to integrate information across multiple dimensions or regions simultaneously. These properties would be expected to suffer more strongly when entanglement is removed.
+
+Furthermore, although a small train-test gap can indicate good generalization, low train and test accuracies together more commonly suggest underfitting. This behavior appears repeatedly for the fully separable variant. This could be caused by the architectural limitation of the separable variant for which the measurement procedure remains on only the first qubit. Without entangling operations, information from distant qubits may therefore influence the output less effectively, introducing an architectural bottleneck. Overall, the train-test evidence suggests that removing entanglement entirely weakens the model primarily by reducing its ability to fit the tasks, whereas partial entanglement preserves much of that fitting capacity.
+
+The benchmark-family averages do not show a uniform relationship between overall performance and the difference in the train--test gap between the CCC and half-separable variants. There is some tendency for stronger-performing families to exhibit smaller gap differences between the two models, but this pattern is not consistent across all benchmark families. In particular, the linearly separable benchmark stands out, while several other families show only very small gap differences regardless of their absolute performance level. The observed correlation therefore depends strongly on the small number of benchmark families considered, and especially on the linearly separable case. When this benchmark is excluded, the correlation becomes much weaker. Thus, the evidence suggests, at most, a mild trend rather than a robust general relationship, or simply that benchmarks with better average test accuracies have in general low degradation and therefore low difference between gaps.
+
+\section{Limitations} 
+The results of this thesis should be interpreted within several important limitations. 
+
+First, all experiments were performed in a simulation-based setting. The reported results therefore characterize the behavior of the implemented model architectures under idealized simulator conditions, but they do not account for hardware-specific effects such as gate noise, finite-shot sampling, decoherence, calibration errors, or restricted device connectivity. Consequently, the experiments should not be interpreted as direct evidence of performance on present-day quantum hardware. 
+
+A second limitation concerns the type of data considered. The benchmark families used in this thesis consist of classical datasets that are embedded into quantum circuits through encoding procedures such as amplitude encoding or feature maps. This differs from quantum-dataset settings, where the data may consist directly of quantum states generated by quantum processes \parencite{schatzki2021entangled} or, more broadly, data generated by or characterizing quantum systems, such as state vectors, Hamiltonians, unitaries, measurement distributions, control pulses, and noise information \parencite{perrier2021qdataset}. The present work therefore studies quantum models applied to classical learning problems, rather than learning directly from intrinsically quantum-mechanical data obtained from physical or simulated quantum systems.
+
+The scope of the model comparison is also limited. The main empirical analysis focuses on the Circuit-Centric Classifier and its entanglement-reduced variants, with only limited results available for the IQP kernel family. The conclusions should therefore not be understood as statements about quantum machine learning models in general. They apply specifically to the evaluated model families, benchmark tasks, and implementation choices. Similarly, the entanglement reduction studied here follows one particular controlled ablation strategy based on removing or sparsifying two-qubit couplings. Other dequantization strategies, different ansatz designs, or alternative measurement rules could lead to different behavior. 
+
+A further architectural limitation is specific to the CCC model. The prediction rule measures only the Pauli-\(Z\) expectation value of the first qubit. In the original and partially entangling variants, entangling gates allow information from other qubits to influence this measured output qubit. In the fully separable variant, this information transfer is removed. As a result, part of the poor performance of the separable CCC may reflect a measurement bottleneck rather than only the absence of entanglement itself. Modifying the measurement rule could mitigate this issue, but it would constitute a more invasive architectural change than the entanglement ablation considered in this thesis. 
+
+The benchmark coverage is also constrained by computational resources, which were directly tied to the finite compute-time allocation available for the RWTH Aachen HPC project used in this thesis. Since the project quota limited the total number of CPU core-hours available for dataset generation, hyperparameter searches, and repeated scoring runs, not all planned experiments could be completed at the same scale. This particularly affected some benchmark families from the reference suite, such as bars-and-stripes, and the IQP kernel experiments. As for which quantum kernel evaluation requires constructing pairwise kernel matrices and therefore scales unfavorably with dataset size and hyperparameter settings. 
+
+Finally, the results remain subject to the usual limitations of empirical benchmarking. Performance can depend on the selected hyperparameter search space, optimization settings, random seeds, and evaluation metric. For this matter, selection followed \parencite{bowles2024better}.  Although repeated runs and fixed seeds were used to improve reproducibility, the analysis is still based on a finite number of experiments. Therefore, statistical variance is expected even with averaging.
 
 \chapter{Conclusion and Outlook}
 
+\nocite{havlicek2019supervised}
 \bibliographystyle{apalike}
 \bibliography{references}
 

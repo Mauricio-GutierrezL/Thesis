@@ -1,0 +1,25 @@
+\begin{table}[H]
+\centering
+\small
+\setlength{\tabcolsep}{5pt}
+\begin{tabular}{l|c|c}
+\hline
+\rowcolor{gray!20}
+Benchmark & CCC Test & CCC/Half-Sep Gap Diff \\
+\hline
+MNIST PCA            & \cellcolor{blue!85}0.850 & \cellcolor{orange!5}0.003 \\
+MNIST PCA Small      & \cellcolor{blue!73}0.815 & \cellcolor{orange!5}0.003 \\
+\rowcolor{gray!4}
+Two Curves           & \cellcolor{blue!69}0.797 & \cellcolor{orange!5}0.002 \\
+Hidden Manifold      & \cellcolor{blue!58}0.752 & \cellcolor{orange!3}0.000 \\
+\rowcolor{gray!4}
+Hidden Manifold Diff & \cellcolor{blue!50}0.723 & \cellcolor{orange!4}0.001 \\
+Hyperplanes Diff     & \cellcolor{blue!39}0.687 & \cellcolor{orange!6}0.005 \\
+\rowcolor{gray!4}
+Two Curves Diff      & \cellcolor{blue!37}0.681 & \cellcolor{orange!11}0.012 \\
+Linearly Separable   & \cellcolor{blue!20}0.573 & \cellcolor{orange!45}0.066 \\
+\hline
+\end{tabular}
+\caption{Benchmark-family averages comparing CCC mean test accuracy with the absolute difference between the train-test gaps of the CCC and half-separable variants. Darker blue indicates higher CCC test accuracy; darker orange indicates a larger CCC/Half-Sep gap difference.}
+\label{tab:ccc-halfsep-gap-relation}
+\end{table}

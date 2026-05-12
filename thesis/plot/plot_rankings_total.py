@@ -74,6 +74,14 @@ MODELS_NO_FIRST50 = [
     model for model in MODELS if model != "CircuitCentricClassifierHalfSeparableFirst50"
 ]
 
+DISPLAY_NAME_MAP = {
+    "CircuitCentricClassifierHalfSeparableRandom50": "CircuitCentricClassifierHalfSeparable",
+}
+
+
+def display_name(model_name: str) -> str:
+    return DISPLAY_NAME_MAP.get(model_name, model_name)
+
 
 def iter_result_files(model_dir: Path):
     for candidate in sorted(model_dir.glob("*_GridSearchCV-best-hyperparams-results.csv")):
@@ -142,8 +150,12 @@ def build_ranking_table(df: pd.DataFrame, models) -> pd.DataFrame:
         order_score[model] = np.mean(rank_pcts) if rank_pcts else np.nan
 
     df_plot = pd.DataFrame(stats).transpose()
+    df_plot.index = [display_name(model_name) for model_name in df_plot.index]
     df_plot = df_plot[df_plot.columns[::-1]]
-    df_plot["average_pct"] = df_plot.index.map(lambda model: order_score[model])
+    df_plot["average_pct"] = [
+        order_score.get(model_name, order_score.get(model_name.replace("CircuitCentricClassifierHalfSeparable", "CircuitCentricClassifierHalfSeparableRandom50")))
+        for model_name in df_plot.index
+    ]
     df_plot = df_plot.sort_values(axis=0, by="average_pct", ascending=False)
     return df_plot.drop(columns=["average_pct"])
 
@@ -162,9 +174,6 @@ def save_ranking_plot(df_plot: pd.DataFrame, outpath: Path, title=None) -> None:
     sns.despine()
     ax.set_xlabel("number of rankings")
     ax.set_ylabel("")
-    if title:
-        ax.set_title(title)
-
     plt.tight_layout()
     plt.savefig(outpath, bbox_inches="tight")
     plt.close(fig)
@@ -195,7 +204,6 @@ def create_ranking_set(models, suffix: str) -> None:
         save_ranking_plot(
             df_dataset_plot,
             FIGURES_DIR / ranking_name(dataset_name),
-            title=dataset_name,
         )
 
 
